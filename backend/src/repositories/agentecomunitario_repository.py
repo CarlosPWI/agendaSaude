@@ -7,3 +7,9 @@ class AgenteComunitarioRepository:
 
     def listar(self):
         return supabase.table("agentescomunitarios").select("*").execute()
+    
+    def buscar_por_id(self, id):
+        return supabase.table("agentescomunitarios").select("*").eq("agentecomunitario_id", id).execute()
+    
+    def deletar(self, id):
+        return supabase.table("agentescomunitarios").delete().eq("agentecomunitario_id", id).execute()

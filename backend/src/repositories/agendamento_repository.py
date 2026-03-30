@@ -17,3 +17,9 @@ class AgendamentoRepository:
             .gte("data_hora_fim", inicio)
             .execute()
         )
+    
+    def buscar_por_id(self, id):
+        return supabase.table("agendamentos").select("*").eq("agendamento_id", id).execute()
+    
+    def deletar(self, id):
+        return supabase.table("agendamentos").delete().eq("agendamento_id", id).execute()

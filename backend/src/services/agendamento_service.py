@@ -40,3 +40,9 @@ class AgendamentoService:
 
     def listar(self):
         return self.repo.listar()
+    
+    def buscar_por_periodo(self, inicio, fim):
+        return self.repo.buscar_por_periodo(inicio, fim)
+    
+    def buscar_por_id(self, id):
+        return self.repo.buscar_por_id(id)

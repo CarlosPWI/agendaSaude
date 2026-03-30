@@ -17,3 +17,9 @@ class AgenteComunitarioService:
 
     def listar(self):
         return self.repo.listar()
+
+    def buscar_por_id(self, id):
+        return self.repo.buscar_por_id(id)
+    
+    def deletar(self, id):
+        return self.repo.deletar(id)

@@ -2,7 +2,7 @@
 
 ## 📌 Descrição
 
-Este projeto consiste no desenvolvimento de um **Sistema Web de Agendamento Online**, criado como parte do Projeto Integrador do curso de Ciência de Dados / Computação.
+Este projeto consiste no desenvolvimento de um **Sistema Web de Agendamento Online**, criado como parte do Projeto Integrador do curso de Ciência de Dados / Engenharia de Sistemas / Bacharelado em Tecnologia da Informação.
 
 A aplicação tem como objetivo permitir o gerenciamento eficiente de horários de atendimento de uma profissional da área de psicologia, possibilitando o cadastro de clientes, controle de agenda e organização dos atendimentos.
 
@@ -22,7 +22,8 @@ A aplicação tem como objetivo permitir o gerenciamento eficiente de horários 
 
 ✔ Cadastro de usuários
 ✔ Autenticação de login
-✔ Cadastro de clientes
+✔ Cadastro de pacientes
+✔ Cadastro de agentes comunitários
 ✔ Cadastro de horários disponíveis
 ✔ Agendamento de consultas
 ✔ Listagem de agendamentos
@@ -34,7 +35,9 @@ A aplicação tem como objetivo permitir o gerenciamento eficiente de horários 
 ## 🛠️ Tecnologias Utilizadas
 
 * **Python**
-* **Framework Web (Django)**
+* Flask
+* Pytest
+* Pydantic
 * **Supabase (PostgreSQL Cloud Database)**
 * HTML
 * CSS
@@ -57,19 +60,82 @@ O sistema utiliza o **Supabase**, uma plataforma backend que fornece:
 ## 📂 Estrutura do Projeto
 
 ```
-sistema-agendamento/
+agemdaSaude/
 │
-├── app/
-│   ├── routes/
-│   ├── models/
-│   ├── services/
-│   └── templates/
+├── backend
+│   │
+│   ├── venv
+│   ├── main.py
+│   ├── requirements.txt
+│   ├── .env
+│   │
+│   ├── src
+│   │   ├── api
+│   │   │   ├── paciente_routes.py
+│   │   │   └── agendamento_routes.py
+│   │   │
+│   │   ├── controllers
+│   │   │   ├── paciente_controller.py
+│   │   │   └── agendamento_controller.py
+│   │   │
+│   │   ├── services
+│   │   │   ├── paciente_service.py
+│   │   │   └── agendamento_service.py
+│   │   │
+│   │   ├── repositories
+│   │   │   ├── paciente_repository.py
+│   │   │   └── agendamento_repository.py
+│   │   │
+│   │   ├── models
+│   │   │   ├── paciente.py
+│   │   │   └── agendamento.py
+│   │   │
+│   │   ├── dtos
+│   │   │   ├── paciente_dto.py
+│   │   │   └── agendamento_dto.py
+│   │   │
+│   │   ├── config
+│   │   │   └── database.py
+│   │   │
+│   │   ├── exceptions
+│   │   │   └── validation_exception.py
+│   │   │
+│   │   └── utils
+│   │       └── response.py
+│   │
+│   └── tests
+│       ├── conftest.py
+│       │
+│       ├── fakes
+│       │   ├── fake_paciente_repository.py
+│       │   └── fake_agendamento_repository.py
+│       │
+│       ├── services
+│       │   ├── test_paciente_service.py
+│       │   └── test_agendamento_service.py
+│       │
+│       ├── controllers
+│       │   └── test_paciente_controller.py
+│       │
+│       └── api
+│           └── test_paciente_api.py
 │
-├── static/
-├── database/
-├── requirements.txt
-├── run.py
-└── README.md
+├── frontend
+│   │
+│   ├── index.html
+│   ├── pacientes.html
+│   ├── agendamentos.html
+│   │
+│   ├── js
+│   │   ├── api.js
+│   │   ├── pacientes.js
+│   │   └── agendamentos.js
+│   │
+│   └── css
+│       └── style.css  (opcional)
+│
+├── README.md
+└── .gitignore
 ```
 
 ---
@@ -134,7 +200,7 @@ SUPABASE_KEY= sua_chave
 7. Executar aplicação
 
 ```
-python run.py
+python main.py
 ```
 
 ---

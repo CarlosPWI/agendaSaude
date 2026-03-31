@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 from src.controllers.agentecomunitario_controller import AgenteComunitarioController
-from src.exceptions.validation_exception import ValidationException
 
 agentecomunitario_bp = Blueprint("agentecomunitario", __name__)
 controller = AgenteComunitarioController()

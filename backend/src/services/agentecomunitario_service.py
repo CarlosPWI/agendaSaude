@@ -1,3 +1,4 @@
+from src.exceptions.validation_exception import ValidationException
 from src.repositories.agentecomunitario_repository import AgenteComunitarioRepository
 from src.models.agentecomunitario import AgenteComunitario
 
@@ -9,7 +10,7 @@ class AgenteComunitarioService:
     def cadastrar(self, nome):
 
         if nome == "":
-            raise Exception("Nome obrigatório")
+            raise ValidationException("Nome obrigatório")
 
         agenteComunitario = AgenteComunitario(nome)
 

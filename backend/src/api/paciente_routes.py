@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 from src.controllers.paciente_controller import PacienteController
-from src.exceptions.validation_exception import ValidationException
 
 paciente_bp = Blueprint("paciente", __name__)
 controller = PacienteController()

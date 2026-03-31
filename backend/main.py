@@ -1,10 +1,14 @@
 from flask import Flask, jsonify
 from src.api.paciente_routes import paciente_bp
+from src.api.agentecomunitario_routes import agentecomunitario_bp
+from src.api.agendamento_routes import agendamento_bp
 from src.exceptions.validation_exception import ValidationException
 
 app = Flask(__name__)
 
 app.register_blueprint(paciente_bp)
+app.register_blueprint(agentecomunitario_bp)
+app.register_blueprint(agendamento_bp)
 
 # handler de erro global
 @app.errorhandler(ValidationException)

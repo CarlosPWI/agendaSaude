@@ -185,6 +185,7 @@ source venv/bin/activate
 5. Instalar dependências
 
 ```
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 

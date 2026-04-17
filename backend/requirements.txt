@@ -1,7 +1,0 @@
-flask
-supabase
-python-dotenv
-pydantic
-pytest
-pytest-cov
-flask-cors

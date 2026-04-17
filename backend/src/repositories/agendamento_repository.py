@@ -6,7 +6,7 @@ class AgendamentoRepository:
         return supabase.table("agendamentos").insert(dados).execute()
 
     def listar(self):
-        return supabase.table("agendamentos").select("*").execute()
+        return supabase.table("agendamentos").select("*, statusagendamentos(*)").execute()
     
     def buscar_por_periodo(self, inicio, fim):
         return (

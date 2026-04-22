@@ -5,12 +5,12 @@ class UsuarioRepository(BaseRepository):
     table = "usuarios"
     id_field = "usuario_id"
 
-    @staticmethod
-    def buscar_por_email(email):
-        return (
+    @classmethod
+    def buscar_por_email(cls, email):
+        return(
             supabase
-            .table("usuarios")
+            .table(cls.table)
             .select("*, tiposusuarios(*)")
             .eq("email", email) 
             .execute()
-        )    
+        )

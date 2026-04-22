@@ -1,15 +1,5 @@
-from src.config.database import supabase
+from src.repositories.base_repository import BaseRepository
 
-class PacienteRepository:
-
-    def inserir(self, dados):
-        return supabase.table("pacientes").insert(dados).execute()
-
-    def listar(self):
-        return supabase.table("pacientes").select("*").execute()
-    
-    def buscar_por_id(self, id):
-        return supabase.table("pacientes").select("*").eq("paciente_id", id).execute()
-    
-    def deletar(self, id):
-        return supabase.table("pacientes").delete().eq("paciente_id", id).execute()
+class PacienteRepository(BaseRepository):
+    table = "pacientes"
+    id_field = "paciente_id"

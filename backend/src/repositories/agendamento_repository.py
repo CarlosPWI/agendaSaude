@@ -1,25 +1,15 @@
+# agendamento_repository.py
+from src.repositories.base_repository import BaseRepository
 from src.config.database import supabase
 
-class AgendamentoRepository:
+class AgendamentoRepository(BaseRepository):
+    table = "agendamentos"
+    id_field = "agendamento_id"
 
-    def inserir(self, dados):
-        return supabase.table("agendamentos").insert(dados).execute()
-
-    def listar(self):
-        return supabase.table("agendamentos").select("*, statusagendamentos(*)").execute()
-    
-    def buscar_por_periodo(self, inicio, fim):
-        return (
-            supabase
-            .table("agendamentos")
-            .select("*")
-            .lte("data_hora_inicio", fim)
-            .gte("data_hora_fim", inicio)
+    @classmethod
+    def buscar_conflitos(cls, inicio, fim):
+        return supabase.table(cls.table) \
+            .select("*") \
+            .lte("data_hora_inicio", fim) \
+            .gte("data_hora_fim", inicio) \
             .execute()
-        )
-    
-    def buscar_por_id(self, id):
-        return supabase.table("agendamentos").select("*").eq("agendamento_id", id).execute()
-    
-    def deletar(self, id):
-        return supabase.table("agendamentos").delete().eq("agendamento_id", id).execute()

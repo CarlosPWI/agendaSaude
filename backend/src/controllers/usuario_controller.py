@@ -1,4 +1,3 @@
-# usuario_controller.py
 from fastapi import APIRouter
 from src.services.usuario_service import UsuarioService
 from src.schemas.usuario_schema import UsuarioCreate

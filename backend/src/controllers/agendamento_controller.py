@@ -1,22 +1,13 @@
+from fastapi import APIRouter
 from src.services.agendamento_service import AgendamentoService
-from src.exceptions.validation_exception import ValidationException
+from src.schemas.agendamento_schema import AgendamentoCreate
 
-class AgendamentoController:
+router = APIRouter(prefix="/agendamentos", tags=["Agendamentos"])
 
-    def __init__(self):
-        self.service = AgendamentoService()
+@router.post("/")
+def criar(data: AgendamentoCreate):
+    return AgendamentoService.criar(data.dict())
 
-    def criar(self, paciente_id, data_hora_inicio, data_hora_fim, status, observacoes):
-        return self.service.agendar(paciente_id, data_hora_inicio, data_hora_fim, status, observacoes)
-
-    def listar(self):
-        return self.service.listar()
-    
-    def buscar_por_periodo(self, inicio, fim):
-        return self.service.buscar_por_periodo(inicio, fim)
-
-    def buscar_por_id(self, id):
-        return self.service.buscar_por_id(id)
-
-    def deletar(self, id):
-        return self.service.deletar(id)
+@router.get("/")
+def listar():
+    return AgendamentoService.listar()

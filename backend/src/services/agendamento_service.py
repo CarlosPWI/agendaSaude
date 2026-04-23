@@ -1,48 +1,34 @@
-from datetime import datetime
-
 from src.repositories.agendamento_repository import AgendamentoRepository
-from src.models.agendamento import Agendamento
+from src.services.base_service import now
 from src.exceptions.validation_exception import ValidationException
 
 class AgendamentoService:
+    def criar(data):
 
-    def __init__(self):
-        self.repo = AgendamentoRepository()
+        if not data["data_hora_inicio"] or not data["data_hora_fim"]:
+            raise ValidationException("Data e hora de início e fim são obrigatórias")
 
-    def agendar(self, paciente_id, data_hora_inicio, data_hora_fim, status, observacoes):
-
-       if data_hora_fim <= data_hora_inicio:
+        if data["data_hora_fim"] <= data["data_hora_inicio"]:
             raise ValidationException("Data e hora de fim devem ser posteriores à data e hora de início")
 
-       diferenca = datetime.strptime(data_hora_fim, '%Y-%m-%d %H:%M:%S') - datetime.strptime(data_hora_inicio, '%Y-%m-%d %H:%M:%S')
-       if diferenca.total_seconds() < ( 30 * 60 ):
-            raise ValidationException("A duração do agendamento deve ser de pelo menos 30 minutos")
-
-       if datetime.strptime(data_hora_inicio, '%Y-%m-%d %H:%M:%S').hour < 8 or datetime.strptime(data_hora_fim, '%Y-%m-%d %H:%M:%S').hour > 18:
-            raise ValidationException("Fora do horário de atendimento")
-
-       if datetime.strptime(data_hora_inicio, '%Y-%m-%d %H:%M:%S') < datetime.now():
+        if data["data_hora_inicio"] < now():
             raise ValidationException("Não é possível agendar no passado")
 
-       conflitos = self.repo.buscar_por_periodo(data_hora_inicio, data_hora_fim)
-       if conflitos.data:
-            raise ValidationException("Já existe agendamento neste horário")
+        if (data["data_hora_fim"] - data["data_hora_inicio"]).total_seconds() < 30 * 60:
+            raise ValidationException("A duração do agendamento deve ser de pelo menos 30 minutos")
 
-       agendamento = Agendamento(
-            paciente_id,
-            data_hora_inicio,
-            data_hora_fim,
-            status,
-            observacoes
+        if data["data_hora_inicio"].hour < 8 or data["data_hora_fim"].hour > 18:
+            raise ValidationException("Fora do horário de atendimento (8h às 18h)")
+
+        conflitos = AgendamentoRepository.buscar_conflitos(
+            data["data_hora_inicio"],
+            data["data_hora_fim"]
         )
 
-       return self.repo.inserir(agendamento.to_dict())
+        if conflitos.data:
+            raise Exception("Conflito de horário")
 
-    def listar(self):
-        return self.repo.listar()
-    
-    def buscar_por_periodo(self, inicio, fim):
-        return self.repo.buscar_por_periodo(inicio, fim)
-    
-    def buscar_por_id(self, id):
-        return self.repo.buscar_por_id(id)
+        return AgendamentoRepository.criar(data)
+
+    def listar():
+        return AgendamentoRepository.listar()

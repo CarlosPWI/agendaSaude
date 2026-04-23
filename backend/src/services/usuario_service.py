@@ -4,8 +4,6 @@ from src.services.base_service import now
 
 class UsuarioService:
     def criar(data):
-        data["criado_em"] = now()
-        data["atualizado_em"] = now()
         return UsuarioRepository.criar(data)
 
     def listar():

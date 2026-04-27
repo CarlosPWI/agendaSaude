@@ -1,38 +1,20 @@
-from flask import Flask, jsonify
-from src.api.paciente_routes import paciente_bp
-from src.api.agentecomunitario_routes import agentecomunitario_bp
-from src.api.agendamento_routes import agendamento_bp
-from src.exceptions.validation_exception import ValidationException
+from fastapi import FastAPI
 
-app = Flask(__name__)
+from src.controllers.tipousuario_controller import router as tipousuario_router
+from src.controllers.usuario_controller import router as usuario_router
+from src.controllers.agentecomunitario_controller import router as agente_router
+from src.controllers.paciente_controller import router as paciente_router
+from src.controllers.statusagendamento_controller import router as status_router
+from src.controllers.agendamento_controller import router as agendamento_router
 
-app.register_blueprint(paciente_bp)
-app.register_blueprint(agentecomunitario_bp)
-app.register_blueprint(agendamento_bp)
+app = FastAPI(
+    title="API Agendamentos - Supabase",
+    version="1.0"
+)
 
-# handler de erro global
-@app.errorhandler(ValidationException)
-def handle_validation_error(e):
-    return jsonify({
-        "success": False,
-        "error": e.message
-    }), e.status_code
-
-@app.errorhandler(Exception)
-def handle_generic_error(e):
-    return jsonify({
-        "success": False,
-        "error": "Erro interno no servidor"
-    }), 500
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
-#from src.controllers.agendamento_controller import AgendamentoController
-#agenda = AgendamentoController()
-#print( agenda.criar(1, "2026-04-10 14:00:00", "2026-04-10 14:50:00", "Agendado", "Primeira consulta") )
-
-#from src.controllers.paciente_controller import PacienteController
-#paciente = PacienteController()
-#print( paciente.criar("", "carlos.a.c.farias@email.com", "119999999", "1981-01-18", "Observações sobre Carlos Farias", True, 1) )
+app.include_router(tipousuario_router)
+app.include_router(usuario_router)
+app.include_router(agente_router)
+app.include_router(paciente_router)
+app.include_router(status_router)
+app.include_router(agendamento_router)

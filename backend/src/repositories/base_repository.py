@@ -1,3 +1,4 @@
+from src.services.base_service import now
 from src.config.database import supabase
 
 class BaseRepository:
@@ -7,6 +8,7 @@ class BaseRepository:
 
     @classmethod
     def criar(cls, data):
+        data.pop("criado_em", None)
         return supabase.table(cls.table).insert(data).execute()
 
     @classmethod
@@ -19,6 +21,8 @@ class BaseRepository:
 
     @classmethod
     def atualizar(cls, value, data):
+        data.pop("criado_em", None)
+        data["atualizado_em"] = now()
         return supabase.table(cls.table).update(data).eq(cls.id_field, value).execute()
 
     @classmethod

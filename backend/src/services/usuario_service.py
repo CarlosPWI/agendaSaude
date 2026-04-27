@@ -11,3 +11,7 @@ class UsuarioService:
     
     def buscar_por_email(email):
         return UsuarioRepository.buscar_por_email(email)
+
+    def atualizar(email, data):
+        return UsuarioRepository.atualizar(email, data)
+        

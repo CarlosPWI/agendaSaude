@@ -13,3 +13,11 @@ class UsuarioResponse(BaseModel):
     email: str
     tipousuario_id: int
     criado_em: datetime
+    alterado_em: datetime
+
+class UsuarioUpdate(BaseModel):
+    nome: str | None = None
+    email: str | None = None
+    senha: str | None = None
+    tipousuario_id: int | None = None
+    alterado_em: datetime | None = None

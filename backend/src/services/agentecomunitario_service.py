@@ -1,4 +1,4 @@
-from src.repositories.agentecomunitario_repository import AgenteComunitarioRepository, AgenteRepository
+from src.repositories.agentecomunitario_repository import AgenteComunitarioRepository
 from src.services.base_service import now
 from src.exceptions.validation_exception import ValidationException
 
@@ -10,5 +10,5 @@ class AgenteComunitarioService:
         return AgenteComunitarioRepository.criar(data)
 
     def listar():
-        return AgenteRepository.listar()
+        return AgenteComunitarioRepository.listar()
 

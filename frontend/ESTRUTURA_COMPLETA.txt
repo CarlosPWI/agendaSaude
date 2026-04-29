@@ -1,0 +1,166 @@
+ESTRUTURA COMPLETA DO PROJETO
+=============================
+
+📁 Agenda Saúde - Portal do Profissional
+Localização: /workspaces/default/code/
+
+ARQUIVOS DE DOCUMENTAÇÃO
+========================
+✅ DOCUMENTACAO.md          - Documentação completa do sistema
+✅ CODIGO_FONTE.md          - Código fonte dos principais arquivos
+✅ ESTRUTURA_COMPLETA.txt   - Este arquivo (índice completo)
+✅ MAPA_DE_ACOES.md         - Descrição de interações e Contrato de API Esperado
+✅ README.md                - Visão geral, estrutura e rotas
+
+ESTRUTURA DE DIRETÓRIOS
+=======================
+
+src/
+├── app/
+│   ├── App.tsx                             - Componente raiz da aplicação
+│   ├── routes.tsx                          - Configuração de rotas React Router
+│   │
+│   ├── pages/                              - Páginas da aplicação
+│   │   ├── LoginPage.tsx                  - Tela de login/autenticação
+│   │   ├── PlannerPage.tsx                - Planner visual (dia/semana)
+│   │   ├── AppointmentsPage.tsx           - Listagem e filtros de sessões
+│   │   ├── NewAppointmentPage.tsx         - Formulário novo agendamento
+│   │   └── ReschedulePage.tsx             - Formulário de reagendamento
+│   │
+│   ├── components/                         - Componentes reutilizáveis
+│   │   ├── DashboardLayout.tsx            - Layout principal do dashboard
+│   │   ├── AttendanceStats.tsx            - Cards de estatísticas
+│   │   │
+│   │   ├── figma/
+│   │   │   └── ImageWithFallback.tsx      - Componente de imagem com fallback
+│   │   │
+│   │   └── ui/                            - Componentes shadcn/ui
+│   │
+│   ├── data/
+│   │   └── mockData.ts                    - Dados mockados e interfaces TypeScript
+│   │
+│   └── services/
+│       └── agendamentoService.ts          - Camada de abstração assíncrona com variável .env
+│
+├── styles/
+│   ├── fonts.css                          - Importações de fontes
+│   ├── index.css                          - Estilos base
+│   ├── tailwind.css                       - Configuração do Tailwind
+│   └── theme.css                          - Tokens Tailwind CSS v4
+│
+└── .env.example                           - Variáveis de ambiente da API (Flask)
+
+
+MAPA DE ROTAS DA APLICAÇÃO
+===========================
+
+/                               → LoginPage
+/dashboard                      → PlannerPage (dentro de DashboardLayout)
+/dashboard/consultas            → AppointmentsPage
+/dashboard/novo-agendamento     → NewAppointmentPage
+/dashboard/reagendar/:id        → ReschedulePage
+
+
+PÁGINAS PRINCIPAIS (5)
+======================
+
+1. LoginPage
+   - Autenticação e Portal do Profissional
+   - Redireciona para /dashboard
+
+2. PlannerPage (Página Principal do Dashboard)
+   - Tab 1: Visualização Diária (grade horária 8h-18h30)
+   - Tab 2: Visualização Semanal (7 dias)
+   - Navegação inteligente: Avança/Retrocede 1 dia ou 1 semana completa com textos dinâmicos
+   - Ação global: "Novo Agendamento" no cabeçalho
+   - Cores por status e indicador de presenças
+
+3. AppointmentsPage
+   - Listagem completa de sessões
+   - Filtros de período, paciente e status
+   - Cards de estatísticas
+   - Ações: Reagendar, Cancelar
+   - Botões de navegação e atalho pro Planner
+
+4. NewAppointmentPage
+   - Formulário de novo agendamento
+   - Campos simplificados (Paciente, Data e Horário)
+
+5. ReschedulePage
+   - Formulário de reagendamento
+   - Exibe informações atuais de data e horário
+   - Permite nova marcação
+
+
+COMPONENTES REUTILIZÁVEIS (2)
+==============================
+
+1. DashboardLayout
+   - Header com saudação ('Olá, Dra. [Nome]')
+   - Container para páginas filhas (Outlet)
+   - Usado em todas as rotas /dashboard/*
+
+2. AttendanceStats
+   - 5 cards de estatísticas (Total, realizadas, não realizadas, agendadas e taxa)
+   - Props: appointments[]
+
+
+DADOS E INTERFACES
+==================
+
+mockData.ts contém:
+- Interface Agendamento
+- Array mockAgendamentos
+
+
+TECNOLOGIAS
+===========
+
+Frontend:
+- React 18+ (TypeScript)
+- React Router v7
+- Vite
+
+UI/Styling:
+- Tailwind CSS v4
+- shadcn/ui (componentes)
+- Lucide React (ícones)
+
+Notificações:
+- Sonner (toasts)
+
+
+CORES POR STATUS
+================
+
+Agendamento:
+- Agendado: Azul (blue-600)
+- Concluído: Verde/Cinza (green-600/gray-600)
+- Cancelado: Vermelho (red-600)
+
+Comparecimento:
+- Realizado: Verde (green-600)
+- Não Realizado: Laranja (orange-600)
+- Pendente: Cinza (gray-400)
+
+
+NAVEGAÇÃO ENTRE PÁGINAS
+========================
+
+Dashboard Planner → Lista de Consultas
+Dashboard Planner → Novo Agendamento
+Lista de Consultas → Reagendar (por consulta)
+Lista de Consultas → Cancelar (por consulta)
+Todas as páginas → Voltar para Dashboard / Planner
+Todas as páginas → Logout (header)
+
+
+OBSERVAÇÕES E ARQUITETURA
+=========================
+
+- Focado estritamente na profissional de Psicologia.
+- Arquitetura "API-ready": agendamentoService.ts importa `import.meta.env.VITE_API_URL` para rápida transição ao Back-end (Flask).
+- "Contrato de API Esperado" detalhado no MAPA_DE_ACOES.md, listando as rotas GET, POST e PUT necessárias.
+- Ambiente: Figma Make.
+- Data: Abril 2026.
+- Versão: 1.0.0.

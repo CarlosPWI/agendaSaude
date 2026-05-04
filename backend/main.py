@@ -6,6 +6,7 @@ from src.controllers.agentecomunitario_controller import router as agente_router
 from src.controllers.paciente_controller import router as paciente_router
 from src.controllers.statusagendamento_controller import router as status_router
 from src.controllers.agendamento_controller import router as agendamento_router
+from src.controllers.auth_controller import router as auth_router
 
 app = FastAPI(
     title="API Agendamentos - Supabase",
@@ -18,3 +19,4 @@ app.include_router(agente_router)
 app.include_router(paciente_router)
 app.include_router(status_router)
 app.include_router(agendamento_router)
+app.include_router(auth_router)

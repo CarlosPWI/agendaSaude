@@ -1,43 +1,63 @@
-from src.repositories.usuario_repository import UsuarioRepository
-from src.models.usuario import Usuario
-from src.exceptions.validation_exception import ValidationException
+from src.config.database import supabase
 
 class AuthService:
 
-    def __init__(self):
-        self.repo = UsuarioRepository()
-
-    def registrar(self, nome, email, senha, tipousuario_id):
-
-        if self.repo.buscar_por_email(email).data:
-            raise ValidationException("Email já cadastrado")
-
-        senha_hash = hash_senha(senha)
-
-        return self.repo.criar({
-            "nome": nome,
+    @staticmethod
+    def login(email: str, password: str):
+        response = supabase.auth.sign_in_with_password({
             "email": email,
-            "senha": senha_hash,
-            "tipousuario_id": tipousuario_id
+            "password": password
         })
 
-    def login(self, email, senha):
-
-        response = self.repo.buscar_por_email(email)
-
-        if not response.data:
-            raise ValidationException("Usuário não encontrado")
-
-        usuario = response.data[0]
-
-        if not verificar_senha(senha, usuario["senha"]):
-            raise ValidationException("Senha inválida")
-
-        tipo_nome = usuario["tipos_usuario"]["nome"]
-
-        token = gerar_token(usuario["id"], tipo_nome)
+        if response.user is None:
+            raise Exception("Credenciais inválidas")
 
         return {
-            "token": token,
-            "usuario": usuario
+            "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token,
+            "user": response.user
+        }
+
+    @staticmethod
+    def register(nome: str, email: str, password: str, tipousuario_id: int):
+        auth_response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+
+        user = auth_response.user
+
+        if user is None:
+            raise Exception("Erro ao criar usuário")
+
+        supabase.table("usuarios").insert({
+            "usuario_id": user.id,
+            "nome": nome,
+            "email": email,
+            "tipousuario_id": tipousuario_id
+        }).execute()
+
+        return {
+            "user": {
+                "id": auth_response.user.id,
+                "email": auth_response.user.email
+            }
+        }
+    
+    @staticmethod
+    def refresh_token(refresh_token: str):
+        response = supabase.auth.refresh_session({
+            "refresh_token": refresh_token
+        })
+
+        if response.session is None:
+            raise Exception("Refresh token inválido ou expirado")
+
+        return {
+            "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token,
+            "user": {
+                "id": response.user.id,
+                "email": response.user.email
+            }
         }

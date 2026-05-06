@@ -1,12 +1,13 @@
-def success(data, status=200):
+def success(data=None, message="Sucesso"):
     return {
         "success": True,
+        "message": message,
         "data": data
-    }, status
+    }
 
-
-def error(message, status=400):
+def error(message="Erro", details=None):
     return {
         "success": False,
-        "error": message
-    }, status
+        "message": message,
+        "details": details
+    }

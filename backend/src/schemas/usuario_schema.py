@@ -1,23 +1,18 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
-
+from uuid import UUID
 class UsuarioCreate(BaseModel):
     nome: str
-    email: str
+    email: EmailStr
     senha: str
     tipousuario_id: int
-
 class UsuarioResponse(BaseModel):
-    usuario_id: int
+    usuario_id: UUID
     nome: str
-    email: str
+    email: EmailStr
     tipousuario_id: int
     criado_em: datetime
-    alterado_em: datetime
-
+    atualizado_em: datetime | None
 class UsuarioUpdate(BaseModel):
     nome: str | None = None
-    email: str | None = None
-    senha: str | None = None
     tipousuario_id: int | None = None
-    alterado_em: datetime | None = None

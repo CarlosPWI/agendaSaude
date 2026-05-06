@@ -1,6 +1,6 @@
-from src.services.base_service import now
 from src.repositories.base_repository import BaseRepository
 from src.config.database import supabase
+from src.services.base_service import now
 
 class UsuarioRepository(BaseRepository):
     table = "usuarios"
@@ -8,29 +8,25 @@ class UsuarioRepository(BaseRepository):
 
     @classmethod
     def listar(cls):
-        return (
-            supabase
-            .table(cls.table)
-            .select("usuario_id, email, nome, criado_em, atualizado_em, tiposusuarios(*)")
-            .execute()
-        )
+        response = supabase.table(cls.table).select("usuario_id, email, nome, criado_em, atualizado_em, tiposusuarios(*)").execute()
+        return response.data
+
+    @classmethod
+    def buscar_por_id(cls, value):
+        response = ( supabase.table(cls.table).select("usuario_id, email, nome, criado_em, atualizado_em, tiposusuarios(*)").execute() )
+        if not response:
+            return []
+        return response.data or []
 
     @classmethod
     def buscar_por_email(cls, email):
-        return(
-            supabase
-            .table(cls.table)
-            .select("*, tiposusuarios(*)")
-            .eq("email", email) 
-            .execute()
-        )
-    
+        response = supabase.table(cls.table).select("usuario_id, email, nome, criado_em, atualizado_em, tiposusuarios(*)").eq("email", email).execute()
+        return response.data[0] if response.data else None
+
     @classmethod
-    def atualizar(cls, email, data):
-        return (
-            supabase
-            .table(cls.table)
-            .update(data)
-            .eq("email", email)
-            .execute()
-        )
+    def atualizar(cls, value, data):
+        data = cls._to_dict(data, exclude={"criado_em"})
+        data = cls._to_dict(data, exclude={"email"})
+        data["atualizado_em"] = now()
+        response = supabase.table(cls.table).update(data).eq(cls.id_field, value).execute()
+        return response.data[0] if response.data else None    

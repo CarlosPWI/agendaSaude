@@ -1,48 +1,45 @@
-from src.config.database import supabase
-from datetime import datetime, timezone
-
+from src.repositories.usuario_repository import UsuarioRepository
+from src.exceptions.validation_exception import ValidationException
+from src.utils.validators import validar_tipousuario_existe
 class UsuarioService:
 
     @staticmethod
     def get_me(user_id: str):
-        return supabase.table("usuarios") \
-            .select("*") \
-            .eq("usuario_id", user_id) \
-            .single() \
-            .execute().data
-
+        user = UsuarioRepository.buscar_por_id(user_id)
+        if not user:
+            raise ValidationException("Usuário não encontrado", 404)
+        return user
 
     @staticmethod
     def get_by_id(user_id: str):
-        return supabase.table("usuarios") \
-            .select("*") \
-            .eq("usuario_id", user_id) \
-            .single() \
-            .execute().data
-
+        return UsuarioService.get_me(user_id)
 
     @staticmethod
     def get_all():
-        return supabase.table("usuarios") \
-            .select("*") \
-            .execute().data
-
+        return UsuarioRepository.listar()
 
     @staticmethod
-    def update(user_id: str, data: dict):
+    def update(user_id: str, data):
+
+        usuario = UsuarioRepository.buscar_por_id(user_id)
+        if not usuario:
+            raise ValidationException("Usuário não encontrado", 404)
+    
+        if hasattr(data, "model_dump"):
+            data = data.model_dump(exclude_unset=True)
+
+        data.pop("senha", None)
         data.pop("criado_em", None)
-        data.pop("password", None)
-        data["atualizado_em"] = datetime.now(timezone.utc).isoformat()
 
-        return supabase.table("usuarios") \
-            .update(data) \
-            .eq("usuario_id", user_id) \
-            .execute().data
+        tipousuario_id = data.get("tipousuario_id")
+        if tipousuario_id is not None:
+            validar_tipousuario_existe(tipousuario_id)
 
+        if not data:
+            raise ValidationException("Nenhum dado enviado para atualização", 400)
+
+        return UsuarioRepository.atualizar(user_id, data)
 
     @staticmethod
     def delete(user_id: str):
-        return supabase.table("usuarios") \
-            .delete() \
-            .eq("usuario_id", user_id) \
-            .execute().data
+        return UsuarioRepository.deletar(user_id)

@@ -1,14 +1,43 @@
 from src.repositories.agentecomunitario_repository import AgenteComunitarioRepository
-from src.services.base_service import now
+from src.schemas.agentecomunitario_schema import (
+    AgenteComunitarioCreate,
+    AgenteComunitarioUpdate
+)
 from src.exceptions.validation_exception import ValidationException
-
 class AgenteComunitarioService:
-    def criar(data):
-        if not data["nome"] or data["nome"].strip() == "":
-            raise ValidationException("O nome do agente comunitário é obrigatório")
-
+    @staticmethod
+    def criar(data: AgenteComunitarioCreate):
         return AgenteComunitarioRepository.criar(data)
 
+    @staticmethod
     def listar():
         return AgenteComunitarioRepository.listar()
 
+    @staticmethod
+    def buscar_por_id(id: int):
+        tipo = AgenteComunitarioRepository.buscar_por_id(id)
+
+        if not tipo:
+            raise ValidationException("Agente comunitário não encontrado", 404)
+
+        return tipo
+
+    @staticmethod
+    def atualizar(id: int, dados: AgenteComunitarioUpdate):
+        AgenteComunitarioService._buscar_ou_erro(id)
+
+        return AgenteComunitarioRepository.atualizar(id, dados)
+
+    @staticmethod
+    def deletar(id: int):
+        AgenteComunitarioService._buscar_ou_erro(id)
+        return AgenteComunitarioRepository.deletar(id)
+
+    @staticmethod
+    def _buscar_ou_erro(id: int):
+        tipo = AgenteComunitarioRepository.buscar_por_id(id)
+
+        if not tipo:
+            raise ValidationException("Agente comunitário não encontrado", 404)
+
+        return tipo

@@ -11,7 +11,6 @@ from src.schemas.response_schema import ResponseSchema
 
 router = APIRouter(prefix="/tiposusuarios", tags=["TiposUsuarios"])
 
-
 @router.get("/", response_model=ResponseSchema[list[TiposUsuariosResponse]])
 def listar():
     data = TiposUsuariosService.listar()

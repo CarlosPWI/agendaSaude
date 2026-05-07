@@ -4,8 +4,6 @@ from src.schemas.tiposusuarios_schema import (
     TiposUsuariosUpdate
 )
 from src.exceptions.validation_exception import ValidationException
-
-
 class TiposUsuariosService:
 
     @staticmethod

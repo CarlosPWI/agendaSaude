@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.controllers.tiposusuarios_controller import router as tiposusuarios_router
 from src.controllers.usuario_controller import router as usuario_router
@@ -16,6 +17,14 @@ app = FastAPI(
     version="1.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(tiposusuarios_router)
 app.include_router(usuario_router)
 app.include_router(agente_router)
@@ -24,8 +33,19 @@ app.include_router(status_router)
 app.include_router(agendamento_router)
 app.include_router(auth_router)
 
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "message": "API Agendamentos rodando 🚀"
+    }
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
 @app.exception_handler(ValidationException)
-async def validation_exception_handler(request, exc: ValidationException):
+async def validation_exception_handler(request: Request, exc: ValidationException):
     return JSONResponse(
         status_code=exc.status_code,
         content={

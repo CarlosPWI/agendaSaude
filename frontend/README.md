@@ -1,50 +1,55 @@
-# Sistema de Agendamentos (Psicologia)
+# 🏥 Agenda Saúde - Sistema de Gestão de Consultas
 
-Este projeto é um sistema de agendamentos focado em um profissional de psicologia. O front-end em React + TypeScript está preparado para ser integrado posteriormente a uma API Python/Flask.
+O **Agenda Saúde** é uma aplicação web moderna desenvolvida para facilitar o agendamento e a gestão de consultas em clínicas e consultórios. O foco principal é oferecer uma interface intuitiva para profissionais de saúde, permitindo o controlo total do fluxo de atendimento e a preservação do histórico de dados para análises estatísticas.
 
-## Estrutura de Diretórios
+## 🚀 Funcionalidades Principais
 
-A estrutura do projeto foi simplificada para conter apenas as páginas e componentes essenciais:
+- **Gestão Completa de Agendamentos (CRUD):** Criação, edição, visualização e remoção de consultas.
+- **Fluxo de Atendimento Avançado:**
+  - **Check-in Automático:** Registo de presença do paciente para atualização de estatísticas.
+  - **Cancelamento com Histórico:** Diferente da exclusão, o cancelamento mantém o registo para análise de taxas de desistência.
+- **Painel de Estatísticas (Dashboard):** Visualização rápida da taxa de comparecimento e volume de consultas.
+- **Notas de Sessão:** Campo de observações integrado na criação e edição de agendamentos para registo de queixas ou lembretes.
+- **Filtros Dinâmicos:** Pesquisa por período de datas, nome do paciente e status da consulta.
 
-```
+## 🛠️ Tecnologias Utilizadas
+
+- **Frontend:** [React.js](https://reactjs.org/) com [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool:** [Vite](https://vitejs.dev/)
+- **Estilização:** [Tailwind CSS](https://tailwindcss.com/)
+- **Componentes UI:** [Shadcn/UI](https://ui.shadcn.com/) (AlertDialog, Table, Cards, Inputs)
+- **Ícones:** [Lucide React](https://lucide.dev/)
+- **Notificações:** [Sonner](https://sonner.emilkowal.ski/)
+- **Mock API:** Sistema de cache local para simulação de backend.
+
+## 📦 Como Executar o Projeto
+
+1. **Clone o repositório:**
+   ```bash
+   git clone [https://github.com/seu-colega/agenda-saude-frontend.git](https://github.com/seu-colega/agenda-saude-frontend.git)
+
+
+   Aceda à pasta do projeto:
+
+Bash
+cd agenda-saude-frontend
+Instale as dependências:
+
+Bash
+npm install
+Inicie o servidor de desenvolvimento:
+
+Bash
+npm run dev
+Aceda no navegador:
+http://localhost:5173
+
+📑 Estrutura de Pastas
+Plaintext
 src/
-├── app/
-│   ├── components/
-│   │   ├── AttendanceStats.tsx     # Estatísticas de comparecimento
-│   │   ├── DashboardLayout.tsx     # Layout principal com a barra de navegação
-│   │   └── ui/                     # Componentes base (shadcn/ui)
-│   ├── data/
-│   │   └── mockData.ts             # Dados simulados (Mock) para o Service Layer
-│   ├── pages/
-│   │   ├── LoginPage.tsx           # Página de autenticação
-│   │   ├── PlannerPage.tsx         # Dashboard / Visualização diária e semanal
-│   │   ├── AppointmentsPage.tsx    # Listagem de todas as consultas (filtro e cancelamento)
-│   │   ├── NewAppointmentPage.tsx  # Formulário para novo agendamento
-│   │   └── ReschedulePage.tsx      # Formulário para reagendar consulta existente
-│   ├── services/
-│   │   └── agendamentoService.ts   # Camada de abstração assíncrona (Service Layer)
-│   ├── App.tsx                     # Ponto de entrada do React Router
-│   └── routes.tsx                  # Definição das rotas principais
-├── styles/
-│   ├── fonts.css
-│   ├── index.css
-│   ├── tailwind.css
-│   └── theme.css
-└── vite.config.ts
-```
-
-## Funcionalidades e Rotas
-
-As páginas desnecessárias (Dashboard Analítico e Busca de Horários Vagos) foram excluídas do projeto para manter o foco na gestão de agenda de uma única profissional. O sistema agora conta com uma interface personalizada ("Portal do Profissional") com saudação direta.
-
-- `/` - **LoginPage**: Autenticação do sistema, contendo título personalizado para o portal.
-- `/dashboard` - **PlannerPage**: Rota principal que exibe o calendário diário e semanal de consultas. Conta com navegação inteligente por intervalo de datas (avança/retrocede dias ou semanas completas com base na visualização ativa).
-- `/dashboard/consultas` - **AppointmentsPage**: Tabela com todas as consultas, com opções de filtro, e botão para cancelamento e reagendamento.
-- `/dashboard/novo-agendamento` - **NewAppointmentPage**: Cadastro de uma nova sessão de psicologia. Recebe os dados do paciente, data e horário.
-- `/dashboard/reagendar/:id` - **ReschedulePage**: Alteração de uma sessão existente, modificando apenas sua data e horário.
-
-## Integração com Back-end (Service Layer)
-
-Os componentes não acessam mais os dados mockados diretamente. O arquivo `agendamentoService.ts` implementa funções assíncronas (com retorno encapsulado em `Promise` e delay simulado via `setTimeout`). Essa arquitetura permitirá uma transição transparente quando os endpoints da API (Python/Flask) estiverem disponíveis, exigindo apenas a alteração dos métodos de mock para chamadas `fetch` ou `axios`.
-
-Consulte o arquivo `MAPA_DE_ACOES.md` para entender as interações da interface e as chamadas ao Service Layer detalhadamente.
+ ├── app/
+ │    ├── pages/      # Ecrãs principais (Dashboard, Agendamentos, Edição)
+ │    ├── components/ # Componentes reutilizáveis (UI, Tabelas, Gráficos)
+ │    ├── services/   # Lógica de comunicação com a API/Mock
+ │    └── data/       # Definição de tipos e dados de teste (Mocks)
+ └── assets/          # Estilos globais e imagens

@@ -1,55 +1,109 @@
-# 🏥 Agenda Saúde - Sistema de Gestão de Consultas
+# 🏥 Agenda Saúde
 
-O **Agenda Saúde** é uma aplicação web moderna desenvolvida para facilitar o agendamento e a gestão de consultas em clínicas e consultórios. O foco principal é oferecer uma interface intuitiva para profissionais de saúde, permitindo o controlo total do fluxo de atendimento e a preservação do histórico de dados para análises estatísticas.
+> Aplicação web moderna para agendamento e gestão de consultas em clínicas e consultórios.
 
-## 🚀 Funcionalidades Principais
+---
 
-- **Gestão Completa de Agendamentos (CRUD):** Criação, edição, visualização e remoção de consultas.
-- **Fluxo de Atendimento Avançado:**
-  - **Check-in Automático:** Registo de presença do paciente para atualização de estatísticas.
-  - **Cancelamento com Histórico:** Diferente da exclusão, o cancelamento mantém o registo para análise de taxas de desistência.
-- **Painel de Estatísticas (Dashboard):** Visualização rápida da taxa de comparecimento e volume de consultas.
-- **Notas de Sessão:** Campo de observações integrado na criação e edição de agendamentos para registo de queixas ou lembretes.
-- **Filtros Dinâmicos:** Pesquisa por período de datas, nome do paciente e status da consulta.
+## 📋 Sobre o Projeto
 
-## 🛠️ Tecnologias Utilizadas
+O **Agenda Saúde** foi desenvolvido com foco na **integridade dos dados históricos**, possibilitando análises estatísticas precisas e o mapeamento do comportamento dos pacientes ao longo do tempo.
 
-- **Frontend:** [React.js](https://reactjs.org/) com [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool:** [Vite](https://vitejs.dev/)
-- **Estilização:** [Tailwind CSS](https://tailwindcss.com/)
-- **Componentes UI:** [Shadcn/UI](https://ui.shadcn.com/) (AlertDialog, Table, Cards, Inputs)
-- **Ícones:** [Lucide React](https://lucide.dev/)
-- **Notificações:** [Sonner](https://sonner.emilkowal.ski/)
-- **Mock API:** Sistema de cache local para simulação de backend.
+A aplicação oferece um fluxo completo de gestão de consultas — criação, edição, visualização e remoção — com recursos avançados que vão além do simples agendamento.
 
-## 📦 Como Executar o Projeto
+---
 
-1. **Clone o repositório:**
-   ```bash
-   git clone [https://github.com/seu-colega/agenda-saude-frontend.git](https://github.com/seu-colega/agenda-saude-frontend.git)
+## ✨ Funcionalidades
 
+### 📅 Gestão de Agendamentos
+- Criação, edição e visualização de consultas
+- Filtros dinâmicos por **período de datas**, **nome do paciente** e **status de comparecimento**
 
-   Aceda à pasta do projeto:
+### ✅ Check-in Avançado
+Registra diretamente na tabela se o paciente **compareceu ou faltou**, alimentando automaticamente as métricas do painel de controle.
 
-Bash
-cd agenda-saude-frontend
-Instale as dependências:
+### 🔴 Cancelar vs. Excluir — Uma distinção estratégica
 
-Bash
+| Ação | Comportamento | Finalidade |
+|---|---|---|
+| **Cancelar** | Altera o status para *cancelado*, mantendo o registro no banco | Análise de taxas de desistência e retenção |
+| **Excluir** | Remove o dado definitivamente | Correção de erros reais de lançamento |
+
+### 📝 Notas de Sessão
+- Inserção de observações em texto livre na criação ou no reagendamento
+- Notas exibidas diretamente na tabela principal, logo abaixo do nome do paciente
+- Leitura rápida e discreta para a equipe da clínica
+
+### 📊 Painel de Controle
+- Métricas alimentadas automaticamente pelo check-in
+- Visão consolidada do comportamento dos pacientes
+
+---
+
+## 🛠️ Stack Técnica
+
+### Frontend
+| Tecnologia | Uso |
+|---|---|
+| [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) | Interface e tipagem |
+| [Vite](https://vitejs.dev/) | Build e performance de carregamento |
+| [Tailwind CSS](https://tailwindcss.com/) | Estilização utilitária |
+| [Shadcn UI](https://ui.shadcn.com/) | Componentes de interface |
+| [Lucide React](https://lucide.dev/) | Iconografia |
+| [Sonner](https://sonner.emilkowal.ski/) | Alertas visuais flutuantes (toasts) |
+
+### Dados (atual)
+- **Mock API** com sistema de **cache local** para simular comunicação com servidor
+
+### Backend (planejado)
+- **Python** com **Flask** ou **FastAPI**
+- Banco de dados **SQL**
+
+---
+
+## 🗺️ Próximos Passos
+
+- [ ] Implementação do backend em Python (Flask ou FastAPI)
+- [ ] Integração com banco de dados SQL real
+- [ ] Substituição dos campos de texto livre por **menus suspensos dinâmicos** para seleção de pacientes cadastrados
+- [ ] Sistema de **autenticação e controle de acesso**
+
+---
+
+## 🏗️ Arquitetura
+
+A arquitetura de serviços e roteamento já foi projetada para facilitar a **migração da Mock API para um backend real**, sem necessidade de reestruturação significativa do frontend.
+
+```
+agenda-saude/
+├── src/
+│   ├── components/       # Componentes reutilizáveis (UI)
+│   ├── pages/            # Telas da aplicação
+│   ├── services/         # Camada de serviços (Mock API → Backend)
+│   └── types/            # Tipagens TypeScript
+├── public/
+└── ...
+```
+
+---
+
+## 🚀 Como Executar
+
+```bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/agenda-saude.git
+
+# Instale as dependências
+cd agenda-saude
 npm install
-Inicie o servidor de desenvolvimento:
 
-Bash
+# Inicie o servidor de desenvolvimento
 npm run dev
-Aceda no navegador:
-http://localhost:5173
+```
 
-📑 Estrutura de Pastas
-Plaintext
-src/
- ├── app/
- │    ├── pages/      # Ecrãs principais (Dashboard, Agendamentos, Edição)
- │    ├── components/ # Componentes reutilizáveis (UI, Tabelas, Gráficos)
- │    ├── services/   # Lógica de comunicação com a API/Mock
- │    └── data/       # Definição de tipos e dados de teste (Mocks)
- └── assets/          # Estilos globais e imagens
+Acesse em: `http://localhost:5173`
+
+---
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Consulte o arquivo `LICENSE` para mais detalhes.

@@ -36,9 +36,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../components/ui/alert-dialog";
-import { Calendar, Plus, Search, Clock, User, X, Edit, CheckCircle2 } from "lucide-react";
+import { Calendar, Plus, Search, Clock, User, X, Edit, CheckCircle2, Trash2 } from "lucide-react";
 import { Agendamento } from "../data/mockData";
-import { fetchAgendamentos, cancelAgendamento } from "../services/agendamentoService";
+import { fetchAgendamentos, cancelAgendamento, deleteAgendamento, concluirAgendamento } from "../services/agendamentoService";
 import { toast } from "sonner";
 import { AttendanceStats } from "../components/AttendanceStats";
 
@@ -51,6 +51,43 @@ export function AppointmentsPage() {
   const [attendedFilter, setAttendedFilter] = useState<"all" | "attended" | "not-attended">("all");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState<string | null>(null);
+const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<string | null>(null);
+
+  const handleDeleteAppointment = (id: string) => {
+    setAppointmentToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (appointmentToDelete) {
+      await deleteAgendamento(appointmentToDelete);
+      toast.success("Consulta excluída definitivamente!");
+      setDeleteDialogOpen(false);
+      setAppointmentToDelete(null);
+      loadAppointments(); 
+    }
+  };
+
+
+  const [concluirDialogOpen, setConcluirDialogOpen] = useState(false);
+  const [appointmentToConcluir, setAppointmentToConcluir] = useState<string | null>(null);
+
+  const handleConcluirAppointment = (id: string) => {
+    setAppointmentToConcluir(id);
+    setConcluirDialogOpen(true);
+  };
+
+  const confirmConcluir = async (attended: boolean) => {
+    if (appointmentToConcluir) {
+      await concluirAgendamento(appointmentToConcluir, attended);
+      toast.success(attended ? "Check-in realizado! Consulta concluída." : "Falta registrada com sucesso.");
+      setConcluirDialogOpen(false);
+      setAppointmentToConcluir(null);
+      loadAppointments(); 
+    }
+  };
+
 
   const loadAppointments = () => {
     fetchAgendamentos().then(setAppointments);
@@ -273,6 +310,12 @@ export function AppointmentsPage() {
                         <div className="text-xs text-gray-500">
                           {appointment.patientId}
                         </div>
+
+                        {appointment.observacoes && (
+                          <div className="text-xs italic text-blue-600 mt-1 max-w-[200px] truncate" title={appointment.observacoes}>
+                            Obs: {appointment.observacoes}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </TableCell>
@@ -290,10 +333,20 @@ export function AppointmentsPage() {
                   </TableCell>
                   <TableCell>{getStatusBadge(appointment.status)}</TableCell>
                   <TableCell>{getAttendanceBadge(appointment)}</TableCell>
-                  <TableCell className="text-right">
+<TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
                       {appointment.status === "agendado" && (
                         <>
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => handleConcluirAppointment(appointment.id)}
+                            title="Finalizar Consulta (Check-in)"
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-1" />
+                            Concluir
+                          </Button>
+                          
                           <Button
                             size="sm"
                             variant="outline"
@@ -304,6 +357,7 @@ export function AppointmentsPage() {
                             <Edit className="w-4 h-4 mr-1" />
                             Reagendar
                           </Button>
+                          
                           <Button
                             size="sm"
                             variant="destructive"
@@ -314,6 +368,16 @@ export function AppointmentsPage() {
                           </Button>
                         </>
                       )}
+                      
+                      {/* O botão de Excluir (Lixeira) continua aqui fora, para apagar qualquer uma */}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDeleteAppointment(appointment.id)}
+                        title="Excluir Definitivamente"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -329,26 +393,70 @@ export function AppointmentsPage() {
         </CardContent>
       </Card>
 
-      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Cancelamento</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Definitivamente</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser
-              desfeita.
+              Tem certeza que deseja apagar esta consulta do sistema? Esta ação removerá o registro definitivamente e não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Não, voltar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmCancel}
-              className="bg-red-600 hover:bg-red-700"
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Sim, cancelar consulta
+              Sim, excluir consulta
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+
+      <AlertDialog open={concluirDialogOpen} onOpenChange={setConcluirDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalizar Consulta</AlertDialogTitle>
+            <AlertDialogDescription>
+              O paciente compareceu a esta consulta? Isso atualizará o painel de estatísticas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-2 sm:justify-end">
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <Button variant="destructive" onClick={() => confirmConcluir(false)}>
+              Não, o paciente faltou
+            </Button>
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => confirmConcluir(true)}>
+              Sim, compareceu
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar Consulta</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar esta consulta? O registro será mantido no histórico, mas o status mudará para "cancelado".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não, manter</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancel}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Sim, cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+
+
     </div>
   );
 }

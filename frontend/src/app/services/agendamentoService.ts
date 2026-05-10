@@ -1,7 +1,7 @@
 import { Agendamento, mockAgendamentos } from "../data/mockData";
 
 // Preparação para futura integração com API em Python/Flask
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = (import.meta as any).env.VITE_API_URL || "http://localhost:5000/api";
 
 // Simula delay de rede
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -46,5 +46,23 @@ export async function cancelAgendamento(id: string): Promise<void> {
   const index = agendamentosCache.findIndex((a) => a.id === id);
   if (index !== -1) {
     agendamentosCache[index].status = "cancelado";
+  }
+}
+
+
+export async function deleteAgendamento(id: string): Promise<void> {
+  await delay(400);
+  const index = agendamentosCache.findIndex((a) => a.id === id);
+  if (index !== -1) {
+    agendamentosCache.splice(index, 1); // Remove o item do array definitivamente
+  }
+}
+
+export async function concluirAgendamento(id: string, attended: boolean): Promise<void> {
+  await delay(400);
+  const agendamento = agendamentosCache.find((a) => a.id === id);
+  if (agendamento) {
+    agendamento.status = "concluído";
+    agendamento.attended = attended;
   }
 }

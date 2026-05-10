@@ -6,6 +6,7 @@ export interface Agendamento {
   time: string;
   status: "agendado" | "concluído" | "cancelado";
   attended: boolean;
+  observacoes?: string;
 }
 
 export const mockAgendamentos: Agendamento[] = [

@@ -21,6 +21,7 @@ export function NewAppointmentPage() {
     patientName: "",
     date: "",
     time: "",
+    observacoes: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +33,7 @@ export function NewAppointmentPage() {
         patientName: formData.patientName,
         date: formData.date,
         time: formData.time,
+        observacoes: formData.observacoes,
       });
 
       toast.success("Consulta agendada com sucesso!", {
@@ -104,6 +106,16 @@ export function NewAppointmentPage() {
                   required
                 />
               </div>
+
+              <div className="space-y-2 mt-4">
+              <label className="text-sm font-medium">Observações sobre a sessão</label>
+              <textarea
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[120px]"
+                placeholder="Ex: Primeira consulta. Paciente relatou dores na lombar pelo telefone..."
+                value={formData.observacoes}
+                onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+              />
+            </div>
             </div>
 
             <div className="flex gap-3 pt-4">

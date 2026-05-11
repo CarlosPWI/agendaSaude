@@ -35,7 +35,9 @@ export function LoginPage() {
 
       if (!response.ok) {
         throw new Error(
-          data.detail || data.message || "Credenciais inválidas"
+          typeof data.detail === "string"
+            ? data.detail
+            : data.message || "Erro ao realizar login"
         );
       }
 
@@ -50,21 +52,17 @@ export function LoginPage() {
         throw new Error("Token não retornado pela API");
       }
 
-      /**
-       * Salva autenticação
-       */
       localStorage.setItem("token", token);
 
-      /**
-       * Salva usuário se existir
-       */
       if (data.usuario) {
         localStorage.setItem(
           "usuario",
-          JSON.stringify(data.usuario)
+          JSON.stringify({
+            nome: data.usuario.nome,
+            email: data.usuario.email,
+          })
         );
       }
-
       toast.success("Login realizado com sucesso");
 
       navigate("/dashboard");

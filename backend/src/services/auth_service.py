@@ -20,12 +20,26 @@ class AuthService:
                     401
                 )
 
+            usuario_id = response.user.id
+
+            usuario_response = (
+                supabase
+                .table("usuarios")
+                .select("*")
+                .eq("usuario_id", usuario_id)
+                .single()
+                .execute()
+            )
+
+            usuario = usuario_response.data
+
             return {
                 "access_token": response.session.access_token,
                 "refresh_token": response.session.refresh_token,
                 "user": {
                     "id": response.user.id,
-                    "email": response.user.email
+                    "email": response.user.email,
+                    "nome": usuario["nome"]
                 }
             }
 

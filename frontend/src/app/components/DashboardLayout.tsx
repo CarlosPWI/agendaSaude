@@ -5,6 +5,12 @@ import { Calendar, LogOut } from "lucide-react";
 export function DashboardLayout() {
   const navigate = useNavigate();
 
+  const usuarioSalvo = localStorage.getItem("usuario");
+
+  const usuario = usuarioSalvo
+    ? JSON.parse(usuarioSalvo)
+    : null;
+
   const handleLogout = () => {
     navigate("/");
   };
@@ -22,7 +28,7 @@ export function DashboardLayout() {
                 <h1 className="text-xl font-semibold text-gray-900">
                   Agenda Saúde
                 </h1>
-                <p className="text-sm text-gray-500">Olá, Dra. [Nome]</p>
+                <p className="text-sm text-gray-500">Olá, {usuario?.nome || "Usuário"}</p>
               </div>
             </div>
             <Button

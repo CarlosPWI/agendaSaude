@@ -11,6 +11,8 @@ class AgendamentoBase(BaseModel):
 
     data_hora_inicio: datetime
 
+    data_hora_fim: datetime
+
     observacoes: str | None = Field(
         default=None,
         max_length=250

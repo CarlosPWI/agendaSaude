@@ -41,9 +41,6 @@ export function LoginPage() {
         );
       }
 
-      /**
-       * Compatível com FastAPI OAuth2/JWT
-       */
       const token =
         data.access_token ||
         data.token;
@@ -54,12 +51,16 @@ export function LoginPage() {
 
       localStorage.setItem("token", token);
 
-      if (data.usuario) {
+      //console.log(data);
+      console.log(data.user);
+  
+      if (data.user) {
+
         localStorage.setItem(
           "usuario",
           JSON.stringify({
-            nome: data.usuario.nome,
-            email: data.usuario.email,
+            nome: data.user.nome,
+            email: data.user.email,
           })
         );
       }

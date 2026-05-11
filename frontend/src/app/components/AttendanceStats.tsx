@@ -1,80 +1,91 @@
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { CheckCircle2, XCircle, Calendar, AlertCircle } from "lucide-react";
-import { Agendamento } from "../data/mockData";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+
+import {
+  CheckCircle2,
+  Calendar,
+  AlertCircle,
+} from "lucide-react";
+
+import { Agendamento } from "../types/agendamento";
 
 interface AttendanceStatsProps {
   appointments: Agendamento[];
 }
 
-export function AttendanceStats({ appointments }: AttendanceStatsProps) {
-  const stats = {
-    total: appointments.length,
-    attended: appointments.filter((apt) => apt.attended && apt.status === "concluído").length,
-    notAttended: appointments.filter((apt) => !apt.attended && apt.status === "concluído").length,
-    scheduled: appointments.filter((apt) => apt.status === "agendado").length,
-    cancelled: appointments.filter((apt) => apt.status === "cancelado").length,
-  };
+export function AttendanceStats({
+  appointments,
+}: AttendanceStatsProps) {
+  const total = appointments.length;
 
-  const attendanceRate = stats.total > 0 
-    ? ((stats.attended / (stats.attended + stats.notAttended)) * 100).toFixed(1)
-    : 0;
+  const attended = appointments.filter(
+    (a) => a.status === "concluído"
+  ).length;
+
+  const scheduled = appointments.filter(
+    (a) => a.status === "agendado"
+  ).length;
+
+  const cancelled = appointments.filter(
+    (a) => a.status === "cancelado"
+  ).length;
+
+  const attendanceRate =
+    total > 0
+      ? ((attended / total) * 100).toFixed(1)
+      : "0";
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Consultas</CardTitle>
-          <Calendar className="h-4 w-4 text-gray-500" />
+        <CardHeader>
+          <CardTitle>Total</CardTitle>
         </CardHeader>
+
         <CardContent>
-          <div className="text-2xl font-bold">{stats.total}</div>
-          <p className="text-xs text-gray-500 mt-1">Todas as consultas</p>
+          <div className="text-2xl font-bold">
+            {total}
+          </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Realizados</CardTitle>
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
+        <CardHeader>
+          <CardTitle>Realizados</CardTitle>
         </CardHeader>
+
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{stats.attended}</div>
-          <p className="text-xs text-gray-500 mt-1">Pacientes compareceram</p>
+          <div className="text-2xl font-bold text-green-600">
+            {attended}
+          </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Não Realizados</CardTitle>
-          <XCircle className="h-4 w-4 text-orange-600" />
+        <CardHeader>
+          <CardTitle>Agendados</CardTitle>
         </CardHeader>
+
         <CardContent>
-          <div className="text-2xl font-bold text-orange-600">{stats.notAttended}</div>
-          <p className="text-xs text-gray-500 mt-1">Pacientes faltaram</p>
+          <div className="text-2xl font-bold text-blue-600">
+            {scheduled}
+          </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Agendados</CardTitle>
-          <Calendar className="h-4 w-4 text-blue-600" />
+        <CardHeader>
+          <CardTitle>Taxa</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{stats.scheduled}</div>
-          <p className="text-xs text-gray-500 mt-1">Aguardando atendimento</p>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Taxa de Comparecimento</CardTitle>
-          <AlertCircle className="h-4 w-4 text-purple-600" />
-        </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-purple-600">
-            {isNaN(Number(attendanceRate)) ? '0' : attendanceRate}%
+            {attendanceRate}%
           </div>
-          <p className="text-xs text-gray-500 mt-1">De consultas concluídas</p>
         </CardContent>
       </Card>
     </div>

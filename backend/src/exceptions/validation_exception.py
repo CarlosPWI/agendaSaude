@@ -1,19 +1,14 @@
-class ValidationException(Exception):
+from fastapi import HTTPException
 
-    def __init__(self, message="Erro de validação", status_code=400, errors=None):
-        """
-        :param message: mensagem geral
-        :param status_code: código HTTP
-        :param errors: lista ou dict com detalhes dos erros
-        """
-        super().__init__(message)
-        self.message = message
-        self.status_code = status_code
-        self.errors = errors or []
 
-    def to_dict(self):
-        return {
-            "success": False,
-            "message": self.message,
-            "errors": self.errors
-        }
+class ValidationException(HTTPException):
+
+    def __init__(
+        self,
+        detail: str,
+        status_code: int = 400
+    ):
+        super().__init__(
+            status_code=status_code,
+            detail=detail
+        )

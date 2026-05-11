@@ -1,15 +1,10 @@
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
+
 import {
   Card,
   CardContent,
@@ -17,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
+
 import {
   Table,
   TableBody,
@@ -25,7 +21,17 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+
 import { Badge } from "../components/ui/badge";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,25 +42,63 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../components/ui/alert-dialog";
-import { Calendar, Plus, Search, Clock, User, X, Edit, CheckCircle2 } from "lucide-react";
-import { Agendamento } from "../data/mockData";
-import { fetchAgendamentos, cancelAgendamento } from "../services/agendamentoService";
+
+import {
+  Calendar,
+  Plus,
+  Search,
+  Clock,
+  User,
+  X,
+  Edit,
+  CheckCircle2,
+} from "lucide-react";
+
 import { toast } from "sonner";
+
 import { AttendanceStats } from "../components/AttendanceStats";
+
+import { Agendamento } from "../types/agendamento";
+
+import {
+  fetchAgendamentos,
+  cancelAgendamento,
+} from "../services/agendamentoService";
 
 export function AppointmentsPage() {
   const navigate = useNavigate();
+
   const [appointments, setAppointments] = useState<Agendamento[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
   const [searchStartDate, setSearchStartDate] = useState("");
   const [searchEndDate, setSearchEndDate] = useState("");
   const [searchPatientName, setSearchPatientName] = useState("");
-  const [attendedFilter, setAttendedFilter] = useState<"all" | "attended" | "not-attended">("all");
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [appointmentToCancel, setAppointmentToCancel] = useState<string | null>(null);
 
-  const loadAppointments = () => {
-    fetchAgendamentos().then(setAppointments);
-  };
+  const [attendedFilter, setAttendedFilter] = useState<
+    "all" | "attended" | "not-attended"
+  >("all");
+
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+
+  const [appointmentToCancel, setAppointmentToCancel] = useState<
+    string | null
+  >(null);
+
+  async function loadAppointments() {
+    try {
+      setLoading(true);
+
+      const data = await fetchAgendamentos();
+
+      setAppointments(data);
+    } catch (error) {
+      toast.error("Erro ao carregar consultas");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     loadAppointments();
@@ -62,110 +106,149 @@ export function AppointmentsPage() {
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appointment) => {
-      // Filtro de data por período
       let dateMatch = true;
-      const appointmentDate = new Date(appointment.date + "T00:00:00");
-      
+
+      const appointmentDate = new Date(
+        appointment.date + "T00:00:00"
+      );
+
       if (searchStartDate && searchEndDate) {
         const startDate = new Date(searchStartDate + "T00:00:00");
+
         const endDate = new Date(searchEndDate + "T23:59:59");
-        dateMatch = appointmentDate >= startDate && appointmentDate <= endDate;
+
+        dateMatch =
+          appointmentDate >= startDate &&
+          appointmentDate <= endDate;
       } else if (searchStartDate) {
         const startDate = new Date(searchStartDate + "T00:00:00");
+
         dateMatch = appointmentDate >= startDate;
       } else if (searchEndDate) {
         const endDate = new Date(searchEndDate + "T23:59:59");
+
         dateMatch = appointmentDate <= endDate;
       }
-      
+
       const patientMatch =
         !searchPatientName ||
-        appointment.patientName.toLowerCase().includes(searchPatientName.toLowerCase());
-        
+        appointment.patientName
+          .toLowerCase()
+          .includes(searchPatientName.toLowerCase());
+
       const attendedMatch =
         attendedFilter === "all" ||
-        (attendedFilter === "attended" && appointment.status === "concluído") ||
-        (attendedFilter === "not-attended" && appointment.status === "agendado");
+        (attendedFilter === "attended" &&
+          appointment.status === "concluído") ||
+        (attendedFilter === "not-attended" &&
+          appointment.status === "agendado");
 
       return dateMatch && patientMatch && attendedMatch;
     });
-  }, [appointments, searchStartDate, searchEndDate, searchPatientName, attendedFilter]);
+  }, [
+    appointments,
+    searchStartDate,
+    searchEndDate,
+    searchPatientName,
+    attendedFilter,
+  ]);
 
-  const handleCancelAppointment = (id: string) => {
+  function handleCancelAppointment(id: string) {
     setAppointmentToCancel(id);
     setCancelDialogOpen(true);
-  };
+  }
 
-  const confirmCancel = async () => {
-    if (appointmentToCancel) {
+  async function confirmCancel() {
+    try {
+      if (!appointmentToCancel) return;
+
       await cancelAgendamento(appointmentToCancel);
-      toast.success("Consulta cancelada com sucesso!");
+
+      toast.success("Consulta cancelada com sucesso");
+
       setCancelDialogOpen(false);
+
       setAppointmentToCancel(null);
-      loadAppointments(); // Recarrega os dados após o cancelamento
+
+      loadAppointments();
+    } catch {
+      toast.error("Erro ao cancelar consulta");
     }
-  };
+  }
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      agendado: "default",
-      concluído: "secondary",
-      cancelado: "destructive",
-    };
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
-  };
-
-  const getAttendanceBadge = (appointment: Agendamento) => {
-    if (appointment.status === "concluído") {
-      if (appointment.attended) {
-        return (
-          <Badge variant="default" className="bg-green-600 hover:bg-green-700">
-            <CheckCircle2 className="w-3 h-3 mr-1" />
-            Realizado
-          </Badge>
-        );
-      } else {
-        return (
-          <Badge variant="default" className="bg-orange-600 hover:bg-orange-700">
-            <X className="w-3 h-3 mr-1" />
-            Não Realizado
-          </Badge>
-        );
-      }
-    }
-    return <Badge variant="outline">Pendente</Badge>;
-  };
-
-  const clearFilters = () => {
+  function clearFilters() {
     setSearchStartDate("");
     setSearchEndDate("");
     setSearchPatientName("");
     setAttendedFilter("all");
-  };
+  }
+
+  function getStatusBadge(status: string) {
+    const variants: Record<
+      string,
+      "default" | "secondary" | "destructive"
+    > = {
+      agendado: "default",
+      concluído: "secondary",
+      cancelado: "destructive",
+    };
+
+    return (
+      <Badge variant={variants[status] || "default"}>
+        {status}
+      </Badge>
+    );
+  }
+
+  function getAttendanceBadge(appointment: Agendamento) {
+    if (appointment.status === "concluído") {
+      return (
+        <Badge className="bg-green-600 hover:bg-green-700">
+          <CheckCircle2 className="w-3 h-3 mr-1" />
+          Realizado
+        </Badge>
+      );
+    }
+
+    return <Badge variant="outline">Pendente</Badge>;
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-20">
+        Carregando consultas...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-semibold text-gray-900">Agenda de Consultas</h2>
-          <p className="text-gray-600 mt-1">
-            Gerencie e consulte todos os agendamentos
+          <h2 className="text-3xl font-semibold">
+            Agenda de Consultas
+          </h2>
+
+          <p className="text-gray-500 mt-1">
+            Gerencie todos os agendamentos
           </p>
         </div>
+
         <div className="flex gap-3">
           <Button
-            onClick={() => navigate("/dashboard")}
             variant="outline"
-            className="flex items-center gap-2"
+            onClick={() => navigate("/dashboard")}
           >
-            <Calendar className="w-4 h-4" />
+            <Calendar className="w-4 h-4 mr-2" />
             Planner
           </Button>
+
           <Button
-            onClick={() => navigate("/dashboard/novo-agendamento")}
-            className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+            onClick={() =>
+              navigate("/dashboard/novo-agendamento")
+            }
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 mr-2" />
             Novo Agendamento
           </Button>
         </div>
@@ -177,64 +260,90 @@ export function AppointmentsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="w-5 h-5" />
-            Filtros de Busca
+            Filtros
           </CardTitle>
+
           <CardDescription>
-            Busque consultas por data, paciente ou status
+            Pesquise consultas por período ou paciente
           </CardDescription>
         </CardHeader>
+
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="dateStart">Data Inicial</Label>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label>Data Inicial</Label>
+
               <Input
-                id="dateStart"
                 type="date"
                 value={searchStartDate}
-                onChange={(e) => setSearchStartDate(e.target.value)}
+                onChange={(e) =>
+                  setSearchStartDate(e.target.value)
+                }
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="dateEnd">Data Final</Label>
+            <div>
+              <Label>Data Final</Label>
+
               <Input
-                id="dateEnd"
                 type="date"
                 value={searchEndDate}
-                onChange={(e) => setSearchEndDate(e.target.value)}
+                onChange={(e) =>
+                  setSearchEndDate(e.target.value)
+                }
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="patientName">Nome do Paciente</Label>
+            <div>
+              <Label>Paciente</Label>
+
               <Input
-                id="patientName"
-                type="text"
-                placeholder="Digite o nome do paciente"
+                placeholder="Nome do paciente"
                 value={searchPatientName}
-                onChange={(e) => setSearchPatientName(e.target.value)}
+                onChange={(e) =>
+                  setSearchPatientName(e.target.value)
+                }
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="attendedFilter">Status</Label>
-              <Select value={attendedFilter} onValueChange={setAttendedFilter as any}>
-                <SelectTrigger id="attendedFilter">
+            <div>
+              <Label>Status</Label>
+
+              <Select
+                value={attendedFilter}
+                onValueChange={(value: any) =>
+                  setAttendedFilter(value)
+                }
+              >
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
+
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="attended">Atendidos</SelectItem>
-                  <SelectItem value="not-attended">Não Atendidos</SelectItem>
+
+                  <SelectItem value="attended">
+                    Realizados
+                  </SelectItem>
+
+                  <SelectItem value="not-attended">
+                    Pendentes
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {(searchStartDate || searchEndDate || searchPatientName || attendedFilter !== "all") && (
+          {(searchStartDate ||
+            searchEndDate ||
+            searchPatientName ||
+            attendedFilter !== "all") && (
             <div className="mt-4">
-              <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-                <X className="w-4 h-4" />
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+              >
+                <X className="w-4 h-4 mr-2" />
                 Limpar Filtros
               </Button>
             </div>
@@ -245,9 +354,11 @@ export function AppointmentsPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Todas as Consultas ({filteredAppointments.length})
+            Todas as Consultas (
+            {filteredAppointments.length})
           </CardTitle>
         </CardHeader>
+
         <CardContent>
           <Table>
             <TableHeader>
@@ -258,62 +369,76 @@ export function AppointmentsPage() {
                 <TableHead>Horário</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Comparecimento</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="text-right">
+                  Ações
+                </TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {filteredAppointments.map((appointment) => (
                 <TableRow key={appointment.id}>
-                  <TableCell className="font-medium">{appointment.id}</TableCell>
+                  <TableCell>
+                    {appointment.id}
+                  </TableCell>
+
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <div>{appointment.patientName}</div>
-                        <div className="text-xs text-gray-500">
-                          {appointment.patientId}
-                        </div>
-                      </div>
+
+                      {appointment.patientName}
                     </div>
                   </TableCell>
+
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      {new Date(appointment.date + "T00:00:00").toLocaleDateString("pt-BR")}
-                    </div>
+                    {new Date(
+                      appointment.date + "T00:00:00"
+                    ).toLocaleDateString("pt-BR")}
                   </TableCell>
+
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-gray-400" />
+
                       {appointment.time}
                     </div>
                   </TableCell>
-                  <TableCell>{getStatusBadge(appointment.status)}</TableCell>
-                  <TableCell>{getAttendanceBadge(appointment)}</TableCell>
+
+                  <TableCell>
+                    {getStatusBadge(appointment.status)}
+                  </TableCell>
+
+                  <TableCell>
+                    {getAttendanceBadge(appointment)}
+                  </TableCell>
+
                   <TableCell className="text-right">
-                    <div className="flex gap-2 justify-end">
-                      {appointment.status === "agendado" && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              navigate(`/dashboard/reagendar/${appointment.id}`)
-                            }
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
-                            Reagendar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleCancelAppointment(appointment.id)}
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            Cancelar
-                          </Button>
-                        </>
-                      )}
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          navigate(
+                            `/dashboard/reagendar/${appointment.id}`
+                          )
+                        }
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Reagendar
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() =>
+                          handleCancelAppointment(
+                            appointment.id
+                          )
+                        }
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Cancelar
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -323,28 +448,36 @@ export function AppointmentsPage() {
 
           {filteredAppointments.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              Nenhuma consulta encontrada com os filtros selecionados.
+              Nenhuma consulta encontrada
             </div>
           )}
         </CardContent>
       </Card>
 
-      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+      <AlertDialog
+        open={cancelDialogOpen}
+        onOpenChange={setCancelDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Cancelamento</AlertDialogTitle>
+            <AlertDialogTitle>
+              Confirmar cancelamento
+            </AlertDialogTitle>
+
             <AlertDialogDescription>
-              Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser
-              desfeita.
+              Deseja realmente cancelar esta consulta?
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter>
-            <AlertDialogCancel>Não, voltar</AlertDialogCancel>
+            <AlertDialogCancel>
+              Voltar
+            </AlertDialogCancel>
+
             <AlertDialogAction
               onClick={confirmCancel}
-              className="bg-red-600 hover:bg-red-700"
             >
-              Sim, cancelar consulta
+              Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -24,6 +24,7 @@ export function ReschedulePage() {
   const [appointment, setAppointment] = useState<Agendamento | null>(null);
   const [newDate, setNewDate] = useState("");
   const [newTime, setNewTime] = useState("");
+  const [observacoes, setObservacoes] = useState(""); // 👇 Adicionamos o estado aqui
 
   useEffect(() => {
     if (id) {
@@ -33,19 +34,21 @@ export function ReschedulePage() {
           setAppointment(data);
           setNewDate(data.date);
           setNewTime(data.time);
+          setObservacoes(data.observacoes || ""); // 👇 Garantimos que o texto salvo carregue aqui
         }
         setLoading(false);
       });
     }
   }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!appointment) return;
 
     setSaving(true);
     try {
-      await updateAgendamento(appointment.id, { date: newDate, time: newTime });
+      await updateAgendamento(appointment.id, { date: newDate, time: newTime, observacoes }); 
+      
       toast.success("Consulta reagendada com sucesso!", {
         description: `Nova data: ${new Date(newDate + "T00:00:00").toLocaleDateString("pt-BR")} às ${newTime}`,
       });
@@ -150,6 +153,18 @@ export function ReschedulePage() {
                   required
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="observacoes">Observações sobre a sessão</Label>
+                <textarea
+                id="observacoes"
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[120px]"
+                placeholder="Ex: Paciente relatou dores... / Lembrete de cobrar o exame..."
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+              />
+            </div>
+
             </div>
 
             <Alert>

@@ -1,6 +1,5 @@
 import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router";
-import { toast } from "sonner";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -8,92 +7,110 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     try {
       setLoading(true);
+
       setError("");
 
       const apiUrl = import.meta.env.VITE_API_URL;
 
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+      const payload = {
+        email,
+        password,
+      };
+
+      const response = await fetch(
+        `${apiUrl}/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          typeof data.detail === "string"
-            ? data.detail
-            : data.message || "Erro ao realizar login"
+          data.message ||
+            data.detail ||
+            "E-mail ou senha incorretos."
         );
       }
 
-      const token =
-        data.access_token ||
-        data.token;
+      if (data.token) {
+        localStorage.setItem(
+          "token",
+          data.token
+        );
 
-      if (!token) {
-        throw new Error("Token não retornado pela API");
       }
 
-      localStorage.setItem("token", token);
+      /*
+        Tenta salvar usuário em vários formatos possíveis
+      */
 
-      //console.log(data);
-      console.log(data.user);
-  
-      if (data.user) {
+      const usuario =
+        data.usuario ||
+        data.user ||
+        data.data ||
+        null;
 
+      if (usuario) {
         localStorage.setItem(
           "usuario",
-          JSON.stringify({
-            nome: data.user.nome,
-            email: data.user.email,
-          })
+          JSON.stringify(usuario)
+        );
+
+      } else {
+        console.warn(
+          "NENHUM OBJETO USUÁRIO RETORNADO NO LOGIN"
         );
       }
-      toast.success("Login realizado com sucesso");
 
       navigate("/dashboard");
     } catch (err: any) {
-      console.error(err);
+      console.error(
+        "ERRO LOGIN:",
+        err
+      );
 
-      setError(err.message);
-
-      toast.error(err.message);
+      setError(
+        err.message ||
+          "Erro ao realizar login"
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <div style={styles.container}>
       <div style={styles.box}>
         <h1 style={styles.title}>
-          Agenda Saúde
+          Fazer login
         </h1>
 
         <p style={styles.subtitle}>
-          Portal do Profissional
+          Prosseguir para o Sistema
         </p>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
+        <form
+          onSubmit={handleSubmit}
+          style={styles.form}
+        >
           <div style={styles.inputGroup}>
             <input
               type="email"
-              placeholder="Digite seu e-mail"
+              placeholder="E-mail"
               value={email}
               onChange={(e) =>
                 setEmail(e.target.value)
@@ -106,7 +123,7 @@ export function LoginPage() {
           <div style={styles.inputGroup}>
             <input
               type="password"
-              placeholder="Digite sua senha"
+              placeholder="Senha"
               value={password}
               onChange={(e) =>
                 setPassword(e.target.value)
@@ -122,15 +139,17 @@ export function LoginPage() {
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={styles.submitBtn}
-          >
-            {loading
-              ? "Entrando..."
-              : "Entrar"}
-          </button>
+          <div style={styles.actions}>
+            <button
+              type="submit"
+              disabled={loading}
+              style={styles.submitBtn}
+            >
+              {loading
+                ? "Entrando..."
+                : "Entrar"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -140,70 +159,73 @@ export function LoginPage() {
 const styles = {
   container: {
     display: "flex",
-    justifyContent: "center",
+    flexDirection: "column" as const,
     alignItems: "center",
+    justifyContent: "center",
     minHeight: "100vh",
     backgroundColor: "#f0f4f9",
-    padding: "20px",
+    fontFamily: "Arial, sans-serif",
   },
 
   box: {
-    width: "100%",
-    maxWidth: "420px",
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
+    backgroundColor: "#fff",
     padding: "40px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+    borderRadius: "8px",
+    boxShadow:
+      "0 1px 3px rgba(0,0,0,0.12)",
+    width: "100%",
+    maxWidth: "400px",
   },
 
   title: {
     textAlign: "center" as const,
+    fontSize: "24px",
     marginBottom: "8px",
-    fontSize: "28px",
-    fontWeight: "700",
-    color: "#111827",
   },
 
   subtitle: {
     textAlign: "center" as const,
+    fontSize: "16px",
     marginBottom: "32px",
-    color: "#6b7280",
   },
 
   form: {
     display: "flex",
     flexDirection: "column" as const,
-    gap: "16px",
   },
 
   inputGroup: {
-    width: "100%",
+    marginBottom: "16px",
   },
 
   input: {
     width: "100%",
-    padding: "14px",
-    borderRadius: "8px",
-    border: "1px solid #d1d5db",
+    padding: "12px",
     fontSize: "16px",
+    borderRadius: "4px",
+    border: "1px solid #dadce0",
     boxSizing: "border-box" as const,
   },
 
-  submitBtn: {
-    width: "100%",
-    padding: "14px",
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
-    fontSize: "16px",
-    fontWeight: "600",
-    cursor: "pointer",
+  error: {
+    color: "#d93025",
+    fontSize: "14px",
+    marginBottom: "16px",
   },
 
-  error: {
-    color: "#dc2626",
+  actions: {
+    display: "flex",
+    justifyContent: "flex-end",
+  },
+
+  submitBtn: {
+    backgroundColor: "#1a73e8",
+    color: "#fff",
+    border: "none",
+    padding: "10px 24px",
+    borderRadius: "4px",
     fontSize: "14px",
-    margin: 0,
+    fontWeight: "500",
+    cursor: "pointer",
   },
 };

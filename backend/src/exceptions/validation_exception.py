@@ -1,14 +1,13 @@
-from fastapi import HTTPException
-
-
-class ValidationException(HTTPException):
+class ValidationException(Exception):
 
     def __init__(
         self,
-        detail: str,
-        status_code: int = 400
+        message: str,
+        status_code: int = 400,
+        errors: list | None = None
     ):
-        super().__init__(
-            status_code=status_code,
-            detail=detail
-        )
+        self.message = message
+        self.status_code = status_code
+        self.errors = errors or []
+
+        super().__init__(message)

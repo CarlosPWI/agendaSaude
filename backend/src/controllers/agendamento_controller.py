@@ -33,12 +33,8 @@ def buscar_por_id(id: int):
 
 @router.post("/", response_model=ResponseSchema[AgendamentoResponse], status_code=201)
 def criar(payload: AgendamentoCreate):
-    try:
-        data = AgendamentoService.criar(payload)
-        return success(data)
-    except ValidationException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.message)
-
+    data = AgendamentoService.criar(payload)
+    return success(data)
 
 @router.put("/{id}", response_model=ResponseSchema[AgendamentoResponse])
 def atualizar(id: int, dados: AgendamentoUpdate):

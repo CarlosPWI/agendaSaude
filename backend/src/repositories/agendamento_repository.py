@@ -12,3 +12,15 @@ class AgendamentoRepository(BaseRepository):
             .lte("data_hora_inicio", fim) \
             .gte("data_hora_fim", inicio) \
             .execute()
+    
+    @classmethod
+    def listar(cls):
+
+        response = (
+            supabase
+            .table(cls.table)
+            .select("*, pacientes(*), statusagendamento(*), usuarios(*, tiposusuarios(*))")
+            .execute()
+        )
+
+        return response.data or []

@@ -1,50 +1,57 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import {
+  useNavigate,
+  useParams,
+} from "react-router";
+
 import { toast } from "sonner";
 
-export function NewAppointmentPage() {
+export function EditPatientPage() {
   const navigate = useNavigate();
 
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const { id } = useParams();
 
-  const [pacientes, setPacientes] =
-    useState<any[]>([]);
-
-  const [statusList, setStatusList] =
-    useState<any[]>([]);
+  const apiUrl =
+    import.meta.env.VITE_API_URL;
 
   const [loading, setLoading] =
     useState(false);
 
-  const [loadingPacientes, setLoadingPacientes] =
+  const [loadingPatient, setLoadingPatient] =
     useState(false);
 
-  const [loadingStatus, setLoadingStatus] =
+  const [loadingAgentes, setLoadingAgentes] =
     useState(false);
+
+  const [agentes, setAgentes] =
+    useState<any[]>([]);
 
   const [formData, setFormData] =
     useState({
-      paciente_id: 0,
-      statusagendamento_id: 0,
-      data: "",
-      horario: "",
+      agentecomunitario_id: 0,
+      nome: "",
+      numero_sus: "",
+      email: "",
+      telefone: "",
+      data_nascimento: "",
       observacoes: "",
+      status: "ativo",
     });
 
   useEffect(() => {
     carregarDados();
-  }, []);
+  }, [id]);
 
   async function carregarDados() {
     await Promise.all([
-      fetchPacientes(),
-      fetchStatusAgendamento(),
+      fetchPaciente(),
+      fetchAgentesComunitarios(),
     ]);
   }
 
-  async function fetchPacientes() {
+  async function fetchPaciente() {
     try {
-      setLoadingPacientes(true);
+      setLoadingPatient(true);
 
       if (!apiUrl) {
         throw new Error(
@@ -52,11 +59,17 @@ export function NewAppointmentPage() {
         );
       }
 
+      if (!id) {
+        throw new Error(
+          "Paciente inválido"
+        );
+      }
+
       const token =
         localStorage.getItem("token");
 
       const response = await fetch(
-        `${apiUrl}/pacientes/`,
+        `${apiUrl}/pacientes/${id}`,
         {
           method: "GET",
 
@@ -75,36 +88,61 @@ export function NewAppointmentPage() {
 
         throw new Error(
           errorText ||
-            "Erro ao buscar pacientes"
+            "Erro ao buscar paciente"
         );
       }
 
       const data =
         await response.json();
 
-      const lista =
-        data?.data || data || [];
+      const paciente =
+        data?.data || data;
 
-      if (!Array.isArray(lista)) {
+      if (!paciente) {
         throw new Error(
-          "Resposta inválida da API de pacientes"
+          "Paciente não encontrado"
         );
       }
 
-      setPacientes(lista);
+      setFormData({
+        agentecomunitario_id:
+          paciente.agentecomunitario_id ||
+          0,
+
+        nome: paciente.nome || "",
+
+        numero_sus:
+          paciente.numero_sus || "",
+
+        email:
+          paciente.email || "",
+
+        telefone:
+          paciente.telefone || "",
+
+        data_nascimento:
+          paciente.data_nascimento
+            ?.split("T")[0] || "",
+
+        observacoes:
+          paciente.observacoes || "",
+
+        status:
+          paciente.status || "ativo",
+      });
     } catch (error: any) {
       toast.error(
         error.message ||
-          "Erro ao carregar pacientes"
+          "Erro ao carregar paciente"
       );
     } finally {
-      setLoadingPacientes(false);
+      setLoadingPatient(false);
     }
   }
 
-  async function fetchStatusAgendamento() {
+  async function fetchAgentesComunitarios() {
     try {
-      setLoadingStatus(true);
+      setLoadingAgentes(true);
 
       if (!apiUrl) {
         throw new Error(
@@ -116,7 +154,7 @@ export function NewAppointmentPage() {
         localStorage.getItem("token");
 
       const response = await fetch(
-        `${apiUrl}/statusagendamento/`,
+        `${apiUrl}/agentescomunitarios/`,
         {
           method: "GET",
 
@@ -135,7 +173,7 @@ export function NewAppointmentPage() {
 
         throw new Error(
           errorText ||
-            "Erro ao buscar status"
+            "Erro ao buscar agentes"
         );
       }
 
@@ -147,58 +185,19 @@ export function NewAppointmentPage() {
 
       if (!Array.isArray(lista)) {
         throw new Error(
-          "Resposta inválida da API de status"
+          "Resposta inválida da API"
         );
       }
 
-      setStatusList(lista);
+      setAgentes(lista);
     } catch (error: any) {
       toast.error(
         error.message ||
-          "Erro ao carregar status"
+          "Erro ao carregar agentes"
       );
     } finally {
-      setLoadingStatus(false);
+      setLoadingAgentes(false);
     }
-  }
-
-  const horarios = useMemo(() => {
-    return Array.from(
-      { length: 11 },
-      (_, index) => {
-        const hora = index + 8;
-
-        return `${hora
-          .toString()
-          .padStart(2, "0")}:00`;
-      }
-    );
-  }, []);
-
-  function formatarDataHoraComTimezone(
-    data: string,
-    horario: string
-  ) {
-    const dataHora = new Date(
-      `${data}T${horario}:00`
-    );
-
-    return dataHora.toISOString();
-  }
-
-  function calcularDataHoraFim(
-    data: string,
-    horario: string
-  ) {
-    const dataHora = new Date(
-      `${data}T${horario}:00`
-    );
-
-    dataHora.setHours(
-      dataHora.getHours() + 1
-    );
-
-    return dataHora.toISOString();
   }
 
   async function handleSubmit(
@@ -207,35 +206,45 @@ export function NewAppointmentPage() {
     e.preventDefault();
 
     try {
-      if (!formData.paciente_id) {
+      if (!id) {
+        throw new Error(
+          "Paciente inválido"
+        );
+      }
+
+      if (
+        !formData.agentecomunitario_id
+      ) {
         toast.error(
-          "Selecione um paciente"
+          "Selecione um agente comunitário"
+        );
+
+        return;
+      }
+
+      if (!formData.nome.trim()) {
+        toast.error(
+          "Informe o nome do paciente"
         );
 
         return;
       }
 
       if (
-        !formData.statusagendamento_id
+        !formData.numero_sus.trim()
       ) {
         toast.error(
-          "Selecione um status"
+          "Informe o número do SUS"
         );
 
         return;
       }
 
-      if (!formData.data) {
+      if (
+        !formData.data_nascimento
+      ) {
         toast.error(
-          "Selecione uma data"
-        );
-
-        return;
-      }
-
-      if (!formData.horario) {
-        toast.error(
-          "Selecione um horário"
+          "Informe a data de nascimento"
         );
 
         return;
@@ -276,35 +285,36 @@ export function NewAppointmentPage() {
       }
 
       const payload = {
-        usuario_id: usuarioId,
+        agentecomunitario_id:
+          formData.agentecomunitario_id,
 
-        paciente_id:
-          formData.paciente_id,
+        nome: formData.nome.trim(),
 
-        statusagendamento_id:
-          formData.statusagendamento_id,
+        numero_sus:
+          formData.numero_sus.trim(),
 
-        data_hora_inicio:
-          formatarDataHoraComTimezone(
-            formData.data,
-            formData.horario
-          ),
+        email:
+          formData.email.trim() ||
+          null,
 
-        data_hora_fim:
-          calcularDataHoraFim(
-            formData.data,
-            formData.horario
-          ),
+        telefone:
+          formData.telefone.trim() ||
+          null,
+
+        data_nascimento:
+          formData.data_nascimento,
 
         observacoes:
           formData.observacoes.trim() ||
           null,
+
+        status: formData.status,
       };
 
       const response = await fetch(
-        `${apiUrl}/agendamentos/`,
+        `${apiUrl}/pacientes/${id}`,
         {
-          method: "POST",
+          method: "PUT",
 
           headers: {
             "Content-Type":
@@ -327,27 +337,40 @@ export function NewAppointmentPage() {
           data.message ||
             data.detail?.[0]?.msg ||
             data.detail ||
-            "Erro ao criar agendamento"
+            "Erro ao atualizar paciente"
         );
       }
 
       toast.success(
-        "Agendamento criado com sucesso"
+        "Paciente atualizado com sucesso"
       );
 
       navigate("/dashboard");
     } catch (error: any) {
       toast.error(
         error.message ||
-          "Erro ao criar agendamento"
+          "Erro ao atualizar paciente"
       );
     } finally {
       setLoading(false);
     }
   }
 
+  if (
+    loadingPatient ||
+    loadingAgentes
+  ) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">
+          Carregando dados...
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -361,18 +384,18 @@ export function NewAppointmentPage() {
           type="button"
           onClick={() =>
             navigate(
-              "/dashboard/pacientes/novo"
+              "/dashboard/agentescomunitarios/novo"
             )
           }
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
-          Criar Paciente
+          Criar Agente Comunitário
         </button>
       </div>
 
       <div className="bg-white border rounded-xl p-6 shadow-sm">
         <h1 className="text-2xl font-bold mb-6">
-          Novo Agendamento
+          Editar Paciente
         </h1>
 
         <form
@@ -381,75 +404,18 @@ export function NewAppointmentPage() {
         >
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Paciente
+              Agente Comunitário
             </label>
 
             <select
               required
-              disabled={
-                loadingPacientes
-              }
               value={String(
-                formData.paciente_id
+                formData.agentecomunitario_id
               )}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  paciente_id: Number(
-                    e.target.value
-                  ),
-                }))
-              }
-              className="w-full border rounded-md px-3 py-2"
-            >
-              <option value="0">
-                {loadingPacientes
-                  ? "Carregando pacientes..."
-                  : "Selecione um paciente"}
-              </option>
-
-              {pacientes.map(
-                (paciente: any) => {
-                  const pacienteId =
-                    paciente.id ||
-                    paciente.paciente_id;
-
-                  const pacienteNome =
-                    paciente.nome ||
-                    paciente.paciente_nome;
-
-                  return (
-                    <option
-                      key={pacienteId}
-                      value={String(
-                        pacienteId
-                      )}
-                    >
-                      {pacienteNome}
-                    </option>
-                  );
-                }
-              )}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Status do Agendamento
-            </label>
-
-            <select
-              required
-              disabled={
-                loadingStatus
-              }
-              value={String(
-                formData.statusagendamento_id
-              )}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  statusagendamento_id:
+                  agentecomunitario_id:
                     Number(
                       e.target.value
                     ),
@@ -458,29 +424,27 @@ export function NewAppointmentPage() {
               className="w-full border rounded-md px-3 py-2"
             >
               <option value="0">
-                {loadingStatus
-                  ? "Carregando status..."
-                  : "Selecione um status"}
+                Selecione um agente
               </option>
 
-              {statusList.map(
-                (status: any) => {
-                  const statusId =
-                    status.id ||
-                    status.statusagendamento_id;
+              {agentes.map(
+                (agente: any) => {
+                  const agenteId =
+                    agente.id ||
+                    agente.agentecomunitario_id;
 
-                  const statusNome =
-                    status.nome ||
-                    status.descricao;
+                  const agenteNome =
+                    agente.nome ||
+                    agente.usuario_nome;
 
                   return (
                     <option
-                      key={statusId}
+                      key={agenteId}
                       value={String(
-                        statusId
+                        agenteId
                       )}
                     >
-                      {statusNome}
+                      {agenteNome}
                     </option>
                   );
                 }
@@ -488,59 +452,142 @@ export function NewAppointmentPage() {
             </select>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Nome Completo
+            </label>
+
+            <input
+              type="text"
+              required
+              maxLength={150}
+              value={formData.nome}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  nome: e.target.value,
+                }))
+              }
+              className="w-full border rounded-md px-3 py-2"
+              placeholder="Nome completo do paciente"
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Data
+                Número do SUS
               </label>
 
               <input
-                type="date"
+                type="text"
                 required
-                value={formData.data}
+                maxLength={20}
+                value={
+                  formData.numero_sus
+                }
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    data: e.target.value,
+                    numero_sus:
+                      e.target.value,
                   }))
                 }
                 className="w-full border rounded-md px-3 py-2"
+                placeholder="Número do SUS"
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Horário
+                Data de Nascimento
               </label>
 
-              <select
+              <input
+                type="date"
                 required
-                value={formData.horario}
+                value={
+                  formData.data_nascimento
+                }
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    horario:
+                    data_nascimento:
                       e.target.value,
                   }))
                 }
                 className="w-full border rounded-md px-3 py-2"
-              >
-                <option value="">
-                  Selecione um horário
-                </option>
-
-                {horarios.map(
-                  (horario) => (
-                    <option
-                      key={horario}
-                      value={horario}
-                    >
-                      {horario}
-                    </option>
-                  )
-                )}
-              </select>
+              />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                E-mail
+              </label>
+
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    email:
+                      e.target.value,
+                  }))
+                }
+                className="w-full border rounded-md px-3 py-2"
+                placeholder="email@exemplo.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Telefone
+              </label>
+
+              <input
+                type="text"
+                maxLength={20}
+                value={formData.telefone}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    telefone:
+                      e.target.value,
+                  }))
+                }
+                className="w-full border rounded-md px-3 py-2"
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Status
+            </label>
+
+            <select
+              value={formData.status}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  status:
+                    e.target.value,
+                }))
+              }
+              className="w-full border rounded-md px-3 py-2"
+            >
+              <option value="ativo">
+                Ativo
+              </option>
+
+              <option value="inativo">
+                Inativo
+              </option>
+            </select>
           </div>
 
           <div className="space-y-2">
@@ -549,8 +596,8 @@ export function NewAppointmentPage() {
             </label>
 
             <textarea
-              rows={4}
-              maxLength={250}
+              rows={5}
+              maxLength={500}
               value={
                 formData.observacoes
               }
@@ -562,6 +609,7 @@ export function NewAppointmentPage() {
                 }))
               }
               className="w-full border rounded-md px-3 py-2"
+              placeholder="Observações do paciente"
             />
           </div>
 
@@ -581,7 +629,7 @@ export function NewAppointmentPage() {
             >
               {loading
                 ? "Salvando..."
-                : "Criar Agendamento"}
+                : "Salvar Alterações"}
             </button>
           </div>
         </form>

@@ -9,7 +9,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Pencil,
 } from "lucide-react";
+
+import { toast } from "sonner";
 
 import { fetchAgendamentos } from "../services/agendamentoService";
 
@@ -38,37 +41,82 @@ interface Agendamento {
 
   status: string;
 
+  statusagendamento_id: number;
+
   pacienteNome: string;
 }
 
 export function PlannerPage() {
   const navigate = useNavigate();
 
-  const [selectedDate, setSelectedDate] = useState(
-    new Date()
-  );
+  const apiUrl =
+    import.meta.env.VITE_API_URL;
+
+  const [selectedDate, setSelectedDate] =
+    useState(new Date());
 
   const [viewMode, setViewMode] = useState<
     "day" | "week"
   >("day");
 
-  const [agendamentos, setAgendamentos] = useState<
-    Agendamento[]
-  >([]);
+  const [agendamentos, setAgendamentos] =
+    useState<Agendamento[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  const [statusList, setStatusList] =
+    useState<any[]>([]);
 
-  const [error, setError] = useState("");
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
 
   useEffect(() => {
-    carregarAgendamentos();
+    carregarDados();
   }, []);
+
+  async function carregarDados() {
+    await Promise.all([
+      carregarAgendamentos(),
+      fetchStatusAgendamento(),
+    ]);
+  }
+
+  async function fetchStatusAgendamento() {
+    try {
+      const token =
+        localStorage.getItem("token");
+
+      const response = await fetch(
+        `${apiUrl}/statusagendamento/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      setStatusList(
+        data.data || data
+      );
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        "Erro ao carregar status"
+      );
+    }
+  }
 
   async function carregarAgendamentos() {
     try {
       setLoading(true);
 
-      const response = await fetchAgendamentos();
+      const response =
+        await fetchAgendamentos();
 
       const lista =
         response?.data ||
@@ -76,14 +124,16 @@ export function PlannerPage() {
         response ||
         [];
 
-      const agendamentosFormatados = lista.map(
-        (item: any) => {
+      const agendamentosFormatados =
+        lista.map((item: any) => {
           const dataInicio = new Date(
             item.data_hora_inicio
           );
 
           return {
-            id: String(item.agendamento_id),
+            id: String(
+              item.agendamento_id
+            ),
 
             data: format(
               dataInicio,
@@ -96,20 +146,24 @@ export function PlannerPage() {
             ),
 
             status:
-              item.statusagendamento?.nome ||
-              "Agendado",
+              item.statusagendamento
+                ?.nome || "Agendado",
+
+            statusagendamento_id:
+              item.statusagendamento_id,
 
             pacienteNome:
               item.pacientes?.nome ||
               `Paciente ${item.paciente_id}`,
           };
-        }
-      );
+        });
 
       setAgendamentos(
         agendamentosFormatados
       );
-    } catch {
+    } catch (error) {
+      console.error(error);
+
       setError(
         "Erro ao carregar agendamentos"
       );
@@ -129,7 +183,9 @@ export function PlannerPage() {
     }
   );
 
-  function getDayAppointments(date: Date) {
+  function getDayAppointments(
+    date: Date
+  ) {
     const formattedDate = format(
       date,
       "yyyy-MM-dd"
@@ -142,7 +198,9 @@ export function PlannerPage() {
     );
   }
 
-  function getWeekAppointments(date: Date) {
+  function getWeekAppointments(
+    date: Date
+  ) {
     const weekStart = startOfWeek(date, {
       weekStartsOn: 0,
     });
@@ -158,19 +216,33 @@ export function PlannerPage() {
         return {
           date: currentDay,
           appointments:
-            getDayAppointments(currentDay),
+            getDayAppointments(
+              currentDay
+            ),
         };
       }
     );
   }
 
-  const todayAppointments = useMemo(() => {
-    return getDayAppointments(selectedDate);
-  }, [selectedDate, agendamentos]);
+  const todayAppointments =
+    useMemo(() => {
+      return getDayAppointments(
+        selectedDate
+      );
+    }, [
+      selectedDate,
+      agendamentos,
+    ]);
 
-  const weekAppointments = useMemo(() => {
-    return getWeekAppointments(selectedDate);
-  }, [selectedDate, agendamentos]);
+  const weekAppointments =
+    useMemo(() => {
+      return getWeekAppointments(
+        selectedDate
+      );
+    }, [
+      selectedDate,
+      agendamentos,
+    ]);
 
   function handlePreviousDay() {
     const previous = new Date(
@@ -179,18 +251,24 @@ export function PlannerPage() {
 
     previous.setDate(
       previous.getDate() -
-        (viewMode === "week" ? 7 : 1)
+        (viewMode === "week"
+          ? 7
+          : 1)
     );
 
     setSelectedDate(previous);
   }
 
   function handleNextDay() {
-    const next = new Date(selectedDate);
+    const next = new Date(
+      selectedDate
+    );
 
     next.setDate(
       next.getDate() +
-        (viewMode === "week" ? 7 : 1)
+        (viewMode === "week"
+          ? 7
+          : 1)
     );
 
     setSelectedDate(next);
@@ -205,8 +283,125 @@ export function PlannerPage() {
   ) {
     return todayAppointments.find(
       (appointment) =>
-        appointment.horario === time
+        appointment.horario ===
+        time
     );
+  }
+
+  function handleEditAppointment(
+    id: string
+  ) {
+    navigate(
+      `/dashboard/reagendar/${id}`
+    );
+  }
+
+  async function handleUpdateStatus(
+    agendamentoId: string,
+    statusId: number
+  ) {
+    try {
+      const token =
+        localStorage.getItem("token");
+
+      /*
+        Busca agendamento atual
+      */
+
+      const responseAgendamento =
+        await fetch(
+          `${apiUrl}/agendamentos/${agendamentoId}/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+      const agendamentoData =
+        await responseAgendamento.json();
+
+      const agendamento =
+        agendamentoData.data ||
+        agendamentoData;
+
+      if (!responseAgendamento.ok) {
+        throw new Error(
+          "Erro ao buscar agendamento"
+        );
+      }
+
+      /*
+        Payload completo
+      */
+
+      const payload = {
+        usuario_id:
+          agendamento.usuario_id,
+
+        paciente_id:
+          agendamento.paciente_id,
+
+        statusagendamento_id:
+          statusId,
+
+        data_hora_inicio:
+          agendamento.data_hora_inicio,
+
+        data_hora_fim:
+          agendamento.data_hora_fim,
+
+        observacoes:
+          agendamento.observacoes,
+      };
+
+      /*
+        Atualiza agendamento
+      */
+
+      const response = await fetch(
+        `${apiUrl}/agendamentos/${agendamentoId}/`,
+        {
+          method: "PUT",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            Authorization: `Bearer ${token}`,
+          },
+
+          body: JSON.stringify(
+            payload
+          ),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            data.detail?.[0]?.msg ||
+            data.detail ||
+            "Erro ao atualizar status"
+        );
+      }
+
+      toast.success(
+        "Status atualizado"
+      );
+
+      carregarAgendamentos();
+    } catch (error: any) {
+      console.error(error);
+
+      toast.error(
+        error.message ||
+          "Erro ao atualizar status"
+      );
+    }
   }
 
   function getStatusColor(
@@ -215,12 +410,19 @@ export function PlannerPage() {
     switch (
       status?.toLowerCase()
     ) {
+      case "realizado":
       case "concluido":
       case "concluído":
         return "bg-green-100 border-green-300";
 
+      case "não realizado":
+        return "bg-orange-100 border-orange-300";
+
       case "cancelado":
         return "bg-red-100 border-red-300";
+
+      case "reagendado":
+        return "bg-purple-100 border-purple-300";
 
       default:
         return "bg-blue-100 border-blue-300";
@@ -231,7 +433,8 @@ export function PlannerPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">
-          Carregando agendamentos...
+          Carregando
+          agendamentos...
         </p>
       </div>
     );
@@ -256,7 +459,8 @@ export function PlannerPage() {
           </h1>
 
           <p className="text-muted-foreground">
-            Visualize seus agendamentos
+            Visualize seus
+            agendamentos
           </p>
         </div>
 
@@ -281,7 +485,9 @@ export function PlannerPage() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={handlePreviousDay}
+                onClick={
+                  handlePreviousDay
+                }
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
@@ -296,7 +502,9 @@ export function PlannerPage() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={handleNextDay}
+                onClick={
+                  handleNextDay
+                }
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -323,17 +531,21 @@ export function PlannerPage() {
         value={viewMode}
         onValueChange={(value) =>
           setViewMode(
-            value as "day" | "week"
+            value as
+              | "day"
+              | "week"
           )
         }
       >
         <TabsList>
           <TabsTrigger value="day">
-            Visualização Diária
+            Visualização
+            Diária
           </TabsTrigger>
 
           <TabsTrigger value="week">
-            Visualização Semanal
+            Visualização
+            Semanal
           </TabsTrigger>
         </TabsList>
 
@@ -341,7 +553,9 @@ export function PlannerPage() {
           <div className="space-y-2">
             {timeSlots.map((slot) => {
               const appointment =
-                getAppointmentByTime(slot);
+                getAppointmentByTime(
+                  slot
+                );
 
               return (
                 <Card key={slot}>
@@ -357,18 +571,84 @@ export function PlannerPage() {
                             appointment.status
                           )}`}
                         >
-                          <p className="font-semibold">
-                            {
-                              appointment.pacienteNome
-                            }
-                          </p>
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="font-semibold">
+                                {
+                                  appointment.pacienteNome
+                                }
+                              </p>
 
-                          <p className="text-sm text-muted-foreground">
-                            Status:{" "}
-                            {
-                              appointment.status
-                            }
-                          </p>
+                              <p className="text-sm text-muted-foreground">
+                                Status:{" "}
+                                {
+                                  appointment.status
+                                }
+                              </p>
+                            </div>
+
+                            <div className="flex flex-col gap-2 min-w-[180px]">
+                              <select
+                                value={String(
+                                  appointment.statusagendamento_id
+                                )}
+                                onChange={(e) =>
+                                  handleUpdateStatus(
+                                    appointment.id,
+                                    Number(
+                                      e.target
+                                        .value
+                                    )
+                                  )
+                                }
+                                className="border rounded-md px-2 py-1 text-sm bg-white"
+                              >
+                                {statusList.map(
+                                  (
+                                    status: any
+                                  ) => {
+                                    const statusId =
+                                      status.id ||
+                                      status.statusagendamento_id;
+
+                                    const statusNome =
+                                      status.nome ||
+                                      status.descricao;
+
+                                    return (
+                                      <option
+                                        key={
+                                          statusId
+                                        }
+                                        value={String(
+                                          statusId
+                                        )}
+                                      >
+                                        {
+                                          statusNome
+                                        }
+                                      </option>
+                                    );
+                                  }
+                                )}
+                              </select>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleEditAppointment(
+                                    appointment.id
+                                  )
+                                }
+                                className="flex items-center gap-2"
+                              >
+                                <Pencil className="w-4 h-4" />
+
+                                Alterar
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <div className="flex-1 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
@@ -385,55 +665,135 @@ export function PlannerPage() {
 
         <TabsContent value="week">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
-            {weekAppointments.map((day) => (
-              <Card
-                key={day.date.toISOString()}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm capitalize">
-                    {format(
-                      day.date,
-                      "EEE dd/MM",
-                      {
-                        locale: ptBR,
-                      }
-                    )}
-                  </CardTitle>
-                </CardHeader>
+            {weekAppointments.map(
+              (day) => (
+                <Card
+                  key={day.date.toISOString()}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm capitalize">
+                      {format(
+                        day.date,
+                        "EEE dd/MM",
+                        {
+                          locale:
+                            ptBR,
+                        }
+                      )}
+                    </CardTitle>
+                  </CardHeader>
 
-                <CardContent className="space-y-2">
-                  {day.appointments.length ===
-                    0 && (
-                    <div className="text-sm text-muted-foreground">
-                      Sem agendamentos
-                    </div>
-                  )}
-
-                  {day.appointments.map(
-                    (appointment) => (
-                      <div
-                        key={appointment.id}
-                        className={`rounded-lg border p-2 text-sm ${getStatusColor(
-                          appointment.status
-                        )}`}
-                      >
-                        <p className="font-medium">
-                          {
-                            appointment.pacienteNome
-                          }
-                        </p>
-
-                        <p className="text-xs">
-                          {
-                            appointment.horario
-                          }
-                        </p>
+                  <CardContent className="space-y-2">
+                    {day
+                      .appointments
+                      .length ===
+                      0 && (
+                      <div className="text-sm text-muted-foreground">
+                        Sem
+                        agendamentos
                       </div>
-                    )
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    )}
+
+                    {day.appointments.map(
+                      (
+                        appointment
+                      ) => (
+                        <div
+                          key={
+                            appointment.id
+                          }
+                          className={`rounded-lg border p-2 text-sm ${getStatusColor(
+                            appointment.status
+                          )}`}
+                        >
+                          <div className="space-y-2">
+                            <div>
+                              <p className="font-medium">
+                                {
+                                  appointment.pacienteNome
+                                }
+                              </p>
+
+                              <p className="text-xs">
+                                {
+                                  appointment.horario
+                                }
+                              </p>
+
+                              <p className="text-xs text-muted-foreground">
+                                {
+                                  appointment.status
+                                }
+                              </p>
+                            </div>
+
+                            <select
+                              value={String(
+                                appointment.statusagendamento_id
+                              )}
+                              onChange={(e) =>
+                                handleUpdateStatus(
+                                  appointment.id,
+                                  Number(
+                                    e.target
+                                      .value
+                                  )
+                                )
+                              }
+                              className="w-full border rounded-md px-2 py-1 text-xs bg-white"
+                            >
+                              {statusList.map(
+                                (
+                                  status: any
+                                ) => {
+                                  const statusId =
+                                    status.id ||
+                                    status.statusagendamento_id;
+
+                                  const statusNome =
+                                    status.nome ||
+                                    status.descricao;
+
+                                  return (
+                                    <option
+                                      key={
+                                        statusId
+                                      }
+                                      value={String(
+                                        statusId
+                                      )}
+                                    >
+                                      {
+                                        statusNome
+                                      }
+                                    </option>
+                                  );
+                                }
+                              )}
+                            </select>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full flex items-center gap-2"
+                              onClick={() =>
+                                handleEditAppointment(
+                                  appointment.id
+                                )
+                              }
+                            >
+                              <Pencil className="w-3 h-3" />
+
+                              Alterar
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            )}
           </div>
         </TabsContent>
       </Tabs>

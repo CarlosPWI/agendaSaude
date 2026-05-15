@@ -24,7 +24,7 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data[0] if response.data else None
+        return response.data[0] if response and response.data[0] else None
 
     @classmethod
     def listar(cls):
@@ -36,7 +36,7 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data or []
+        return response.data if response and response.data else None
 
     @classmethod
     def buscar_por_id(cls, value):
@@ -50,7 +50,7 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data or None
+        return response.data if response and response.data else None
 
     @classmethod
     def atualizar(cls, value, data):
@@ -70,7 +70,7 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data[0] if response.data else None
+        return response.data[0] if response and response.data[0] else None
 
     @classmethod
     def deletar(cls, value):
@@ -83,7 +83,7 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data[0] if response.data else None
+        return response.data[0] if response and response.data[0] else None
 
     @staticmethod
     def _to_dict(data, exclude=None):

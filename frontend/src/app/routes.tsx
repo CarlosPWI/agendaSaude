@@ -4,6 +4,7 @@ import { DashboardLayout } from "./components/DashboardLayout";
 import { AppointmentsPage } from "./pages/AppointmentsPage";
 import { NewAppointmentPage } from "./pages/NewAppointmentPage";
 import { NewPatientPage } from "./pages/NewPatientPage";
+import { EditPatientPage } from "./pages/EditPatientPage";
 import { NewAgenteComunitarioPage } from "./pages/NewAgenteComunitarioPage";
 import { ReschedulePage } from "./pages/ReschedulePage";
 import { PlannerPage } from "./pages/PlannerPage";
@@ -32,6 +33,10 @@ export const router = createBrowserRouter([
       {
         path: "pacientes/novo",
         Component: NewPatientPage,
+      },
+      {
+        path: "pacientes/alterar/:id",
+        Component: EditPatientPage,
       },
       {
         path: "agentescomunitarios/novo",

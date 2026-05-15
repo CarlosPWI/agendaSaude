@@ -32,11 +32,11 @@ export function NewPatientPage() {
 
       console.log(
         "BUSCANDO AGENTES:",
-        `${apiUrl}/agentescomunitarios`
+        `${apiUrl}/agentescomunitarios/`
       );
 
       const response = await fetch(
-        `${apiUrl}/agentescomunitarios`,
+        `${apiUrl}/agentescomunitarios/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -1,200 +1,609 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import { useEffect, useMemo, useState } from "react";
+
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
-import { ArrowLeft, Calendar, Check, AlertCircle } from "lucide-react";
-import { Agendamento } from "../data/mockData";
-import { fetchAgendamentoById, updateAgendamento } from "../services/agendamentoService";
+  useNavigate,
+  useParams,
+} from "react-router";
+
 import { toast } from "sonner";
-import { Alert, AlertDescription } from "../components/ui/alert";
 
 export function ReschedulePage() {
   const navigate = useNavigate();
+
   const { id } = useParams();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [appointment, setAppointment] = useState<Agendamento | null>(null);
-  const [newDate, setNewDate] = useState("");
-  const [newTime, setNewTime] = useState("");
-  const [observacoes, setObservacoes] = useState(""); // 👇 Adicionamos o estado aqui
+
+  const apiUrl =
+    import.meta.env.VITE_API_URL;
+
+  const [pacientes, setPacientes] =
+    useState<any[]>([]);
+
+  const [statusList, setStatusList] =
+    useState<any[]>([]);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [loadingPage, setLoadingPage] =
+    useState(true);
+
+  const [formData, setFormData] =
+    useState({
+      paciente_id: 0,
+      statusagendamento_id: 0,
+      data: "",
+      horario: "",
+      observacoes: "",
+    });
 
   useEffect(() => {
-    if (id) {
-      setLoading(true);
-      fetchAgendamentoById(id).then((data) => {
-        if (data) {
-          setAppointment(data);
-          setNewDate(data.date);
-          setNewTime(data.time);
-          setObservacoes(data.observacoes || ""); // 👇 Garantimos que o texto salvo carregue aqui
-        }
-        setLoading(false);
-      });
-    }
-  }, [id]);
+    carregarDados();
+  }, []);
 
-const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!appointment) return;
-
-    setSaving(true);
+  async function carregarDados() {
     try {
-      await updateAgendamento(appointment.id, { date: newDate, time: newTime, observacoes }); 
-      
-      toast.success("Consulta reagendada com sucesso!", {
-        description: `Nova data: ${new Date(newDate + "T00:00:00").toLocaleDateString("pt-BR")} às ${newTime}`,
-      });
-      navigate("/dashboard");
-    } catch (error) {
-      toast.error("Erro ao reagendar. Tente novamente.");
-    } finally {
-      setSaving(false);
-    }
-  };
+      setLoadingPage(true);
 
-  if (loading) {
-    return (
-      <div className="max-w-3xl mx-auto space-y-6 text-center py-12">
-        <p className="text-gray-500">Carregando dados da consulta...</p>
-      </div>
-    );
+      await Promise.all([
+        fetchPacientes(),
+        fetchStatusAgendamento(),
+        fetchAgendamento(),
+      ]);
+    } finally {
+      setLoadingPage(false);
+    }
   }
 
-  if (!appointment) {
+  async function fetchPacientes() {
+    try {
+      const token =
+        localStorage.getItem("token");
+
+      const response = await fetch(
+        `${apiUrl}/pacientes`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      setPacientes(
+        data.data || data
+      );
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        "Erro ao carregar pacientes"
+      );
+    }
+  }
+
+  async function fetchStatusAgendamento() {
+    try {
+      const token =
+        localStorage.getItem("token");
+
+      const response = await fetch(
+        `${apiUrl}/statusagendamento`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      setStatusList(
+        data.data || data
+      );
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        "Erro ao carregar status"
+      );
+    }
+  }
+
+  async function fetchAgendamento() {
+    try {
+      const token =
+        localStorage.getItem("token");
+
+      const response = await fetch(
+        `${apiUrl}/agendamentos/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      const agendamento =
+        data.data || data;
+
+      const dataInicio = new Date(
+        agendamento.data_hora_inicio
+      );
+
+      const dataFormatada =
+        dataInicio
+          .toISOString()
+          .split("T")[0];
+
+      const horarioFormatado =
+        dataInicio.toLocaleTimeString(
+          "pt-BR",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }
+        );
+
+      setFormData({
+        paciente_id:
+          agendamento.paciente_id,
+
+        statusagendamento_id:
+          agendamento.statusagendamento_id,
+
+        data: dataFormatada,
+
+        horario:
+          horarioFormatado,
+
+        observacoes:
+          agendamento.observacoes ||
+          "",
+      });
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        "Erro ao carregar agendamento"
+      );
+    }
+  }
+
+  const horarios = useMemo(() => {
+    return Array.from(
+      { length: 11 },
+      (_, index) => {
+        const hora = index + 8;
+
+        return `${hora
+          .toString()
+          .padStart(2, "0")}:00`;
+      }
+    );
+  }, []);
+
+  function formatarDataHoraComTimezone(
+    data: string,
+    horario: string
+  ) {
+    const dataHora = new Date(
+      `${data}T${horario}:00`
+    );
+
+    return dataHora.toISOString();
+  }
+
+  function calcularDataHoraFim(
+    data: string,
+    horario: string
+  ) {
+    const dataHora = new Date(
+      `${data}T${horario}:00`
+    );
+
+    dataHora.setHours(
+      dataHora.getHours() + 1
+    );
+
+    return dataHora.toISOString();
+  }
+
+  async function handleSubmit(
+    e: React.FormEvent
+  ) {
+    e.preventDefault();
+
+    try {
+      if (!formData.paciente_id) {
+        toast.error(
+          "Selecione um paciente"
+        );
+
+        return;
+      }
+
+      if (
+        !formData.statusagendamento_id
+      ) {
+        toast.error(
+          "Selecione um status"
+        );
+
+        return;
+      }
+
+      if (!formData.data) {
+        toast.error(
+          "Selecione uma data"
+        );
+
+        return;
+      }
+
+      if (!formData.horario) {
+        toast.error(
+          "Selecione um horário"
+        );
+
+        return;
+      }
+
+      setLoading(true);
+
+      const token =
+        localStorage.getItem("token");
+
+      const usuarioSalvo =
+        localStorage.getItem(
+          "usuario"
+        );
+
+      if (!usuarioSalvo) {
+        toast.error(
+          "Usuário não encontrado"
+        );
+
+        return;
+      }
+
+      const usuario =
+        JSON.parse(usuarioSalvo);
+
+      const usuarioId =
+        usuario.usuario_id ||
+        usuario.id ||
+        usuario.user_id;
+
+      const dataHoraInicio =
+        formatarDataHoraComTimezone(
+          formData.data,
+          formData.horario
+        );
+
+      const dataHoraFim =
+        calcularDataHoraFim(
+          formData.data,
+          formData.horario
+        );
+
+      const payload = {
+        usuario_id: usuarioId,
+
+        paciente_id:
+          formData.paciente_id,
+
+        statusagendamento_id:
+          formData.statusagendamento_id,
+
+        data_hora_inicio:
+          dataHoraInicio,
+
+        data_hora_fim:
+          dataHoraFim,
+
+        observacoes:
+          formData.observacoes?.trim() ||
+          null,
+      };
+
+      console.log(
+        "PAYLOAD REAGENDAMENTO:"
+      );
+
+      console.log(payload);
+
+      const response = await fetch(
+        `${apiUrl}/agendamentos/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            Authorization: `Bearer ${token}`,
+          },
+
+          body: JSON.stringify(
+            payload
+          ),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      console.log(
+        "RESPONSE BACKEND:"
+      );
+
+      console.log(data);
+
+      if (!response.ok) {
+      const errorMessage =
+        data.message ||
+        data.detail?.[0]?.msg ||
+        data.detail ||
+        "Erro ao reagendar";
+
+      throw new Error(errorMessage);
+      }
+
+      toast.success(
+        "Agendamento alterado com sucesso"
+      );
+
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error(error);
+
+      toast.error(
+        error.message ||
+          "Erro ao reagendar"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loadingPage) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Consulta não encontrada. Verifique o ID e tente novamente.
-          </AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate("/dashboard")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar para Dashboard
-        </Button>
+      <div className="flex items-center justify-center h-64">
+        <p>
+          Carregando agendamento...
+        </p>
       </div>
     );
   }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 border rounded-md hover:bg-gray-100"
+        >
           Voltar
-        </Button>
+        </button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-6 h-6 text-blue-600" />
-            Reagendar Consulta
-          </CardTitle>
-          <CardDescription>
-            Altere a data e horário da sessão
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-2">
-            <h3 className="font-semibold text-gray-900">Informações Atuais</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-gray-600">Paciente:</span>{" "}
-                <span className="font-medium">{appointment.patientName}</span>
-              </div>
-              <div>
-                <span className="text-gray-600">ID do Paciente:</span>{" "}
-                <span className="font-medium">{appointment.patientId}</span>
-              </div>
-              <div>
-                <span className="text-gray-600">Data Atual:</span>{" "}
-                <span className="font-medium">
-                  {new Date(appointment.date + "T00:00:00").toLocaleDateString("pt-BR")}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Horário Atual:</span>{" "}
-                <span className="font-medium">{appointment.time}</span>
-              </div>
-            </div>
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+        <h1 className="text-2xl font-bold mb-6">
+          Alterar Agendamento
+        </h1>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5"
+        >
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Paciente
+            </label>
+
+            <select
+              required
+              value={String(
+                formData.paciente_id
+              )}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  paciente_id: Number(
+                    e.target.value
+                  ),
+                }))
+              }
+              className="w-full border rounded-md px-3 py-2"
+            >
+              <option value="0">
+                Selecione um paciente
+              </option>
+
+              {pacientes.map(
+                (paciente: any) => {
+                  const pacienteId =
+                    paciente.id ||
+                    paciente.paciente_id;
+
+                  const pacienteNome =
+                    paciente.nome ||
+                    paciente.paciente_nome;
+
+                  return (
+                    <option
+                      key={pacienteId}
+                      value={String(
+                        pacienteId
+                      )}
+                    >
+                      {pacienteNome}
+                    </option>
+                  );
+                }
+              )}
+            </select>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="newDate">Nova Data *</Label>
-                <Input
-                  id="newDate"
-                  type="date"
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  required
-                />
-              </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Status
+            </label>
 
-              <div className="space-y-2">
-                <Label htmlFor="newTime">Novo Horário *</Label>
-                <Input
-                  id="newTime"
-                  type="time"
-                  value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
-                  required
-                />
-              </div>
+            <select
+              required
+              value={String(
+                formData.statusagendamento_id
+              )}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  statusagendamento_id:
+                    Number(
+                      e.target.value
+                    ),
+                }))
+              }
+              className="w-full border rounded-md px-3 py-2"
+            >
+              <option value="0">
+                Selecione um status
+              </option>
 
-              <div className="space-y-2">
-                <Label htmlFor="observacoes">Observações sobre a sessão</Label>
-                <textarea
-                id="observacoes"
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[120px]"
-                placeholder="Ex: Paciente relatou dores... / Lembrete de cobrar o exame..."
-                value={observacoes}
-                onChange={(e) => setObservacoes(e.target.value)}
+              {statusList.map(
+                (status: any) => {
+                  const statusId =
+                    status.id ||
+                    status.statusagendamento_id;
+
+                  const statusNome =
+                    status.nome;
+
+                  return (
+                    <option
+                      key={statusId}
+                      value={String(
+                        statusId
+                      )}
+                    >
+                      {statusNome}
+                    </option>
+                  );
+                }
+              )}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Data
+              </label>
+
+              <input
+                type="date"
+                required
+                value={formData.data}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    data:
+                      e.target.value,
+                  }))
+                }
+                className="w-full border rounded-md px-3 py-2"
               />
             </div>
 
-            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Horário
+              </label>
 
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Ao confirmar o reagendamento, certifique-se de avisar o paciente sobre a nova data.
-              </AlertDescription>
-            </Alert>
+              <select
+                required
+                value={
+                  formData.horario
+                }
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    horario:
+                      e.target.value,
+                  }))
+                }
+                className="w-full border rounded-md px-3 py-2"
+              >
+                <option value="">
+                  Selecione um horário
+                </option>
 
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="submit"
-                disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
-              >
-                <Check className="w-4 h-4" />
-                {saving ? "Salvando..." : "Confirmar Reagendamento"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                onClick={() => navigate("/dashboard")}
-              >
-                Cancelar
-              </Button>
+                {horarios.map(
+                  (horario) => (
+                    <option
+                      key={horario}
+                      value={horario}
+                    >
+                      {horario}
+                    </option>
+                  )
+                )}
+              </select>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Observações
+            </label>
+
+            <textarea
+              rows={4}
+              value={
+                formData.observacoes
+              }
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  observacoes:
+                    e.target.value,
+                }))
+              }
+              className="w-full border rounded-md px-3 py-2"
+              placeholder="Digite observações do agendamento"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() =>
+                navigate(-1)
+              }
+              className="px-4 py-2 border rounded-md hover:bg-gray-100"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading
+                ? "Salvando..."
+                : "Salvar Alterações"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

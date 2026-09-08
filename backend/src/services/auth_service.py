@@ -2,7 +2,7 @@ import os
 
 from supabase import create_client
 
-from src.config.database import SUPABASE_URL, SUPABASE_KEY, supabase
+from src.config.database import SUPABASE_URL, SUPABASE_KEY, supabase, db
 from src.repositories.usuario_repository import UsuarioRepository
 from src.utils.validators import validar_tipousuario_existe
 from src.exceptions.validation_exception import ValidationException
@@ -115,7 +115,7 @@ class AuthService:
             )
 
         usuario_response = (
-            supabase
+            db
             .table("usuarios")
             .select("*")
             .eq("usuario_id", response.user.id)

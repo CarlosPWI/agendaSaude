@@ -1,7 +1,7 @@
 import json
 from datetime import date, datetime
 
-from src.config.database import supabase
+from src.config.database import db
 from src.services.base_service import now
 
 
@@ -25,7 +25,7 @@ class BaseRepository:
         )
 
         response = (
-            supabase
+            db
             .table(cls.table)
             .insert(payload)
             .execute()
@@ -40,7 +40,7 @@ class BaseRepository:
         offset: int | None = None,
     ):
 
-        query = supabase.table(cls.table).select("*")
+        query = db.table(cls.table).select("*")
 
         if limit is not None:
             query = query.limit(limit)
@@ -56,7 +56,7 @@ class BaseRepository:
     def buscar_por_id(cls, value):
 
         response = (
-            supabase
+            db
             .table(cls.table)
             .select("*")
             .eq(cls.id_field, value)
@@ -87,7 +87,7 @@ class BaseRepository:
         payload["atualizado_em"] = now()
 
         response = (
-            supabase
+            db
             .table(cls.table)
             .update(payload)
             .eq(cls.id_field, value)
@@ -100,7 +100,7 @@ class BaseRepository:
     def deletar(cls, value):
 
         response = (
-            supabase
+            db
             .table(cls.table)
             .delete()
             .eq(cls.id_field, value)

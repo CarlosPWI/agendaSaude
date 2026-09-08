@@ -92,6 +92,7 @@ def test_login_credenciais_invalidas(monkeypatch):
 def test_login_sem_registro_na_tabela(monkeypatch):
     fake = FakeSupabase(auth_response=make_auth_response(), usuario=None)
     monkeypatch.setattr(auth_service, "supabase", fake)
+    monkeypatch.setattr(auth_service, "db", fake)
 
     with pytest.raises(ValidationException) as exc:
         AuthService.login("ana@teste.com", "123456")
@@ -103,6 +104,7 @@ def test_login_sucesso(monkeypatch):
     usuario = {"usuario_id": USER_ID, "nome": "Ana"}
     fake = FakeSupabase(auth_response=make_auth_response(), usuario=usuario)
     monkeypatch.setattr(auth_service, "supabase", fake)
+    monkeypatch.setattr(auth_service, "db", fake)
 
     result = AuthService.login("ana@teste.com", "123456")
 

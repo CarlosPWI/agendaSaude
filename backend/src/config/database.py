@@ -13,11 +13,17 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Cliente privilegiado (service role) — usado apenas para operações
-# administrativas, como remover o usuário do Supabase Auth (A-6).
-# Fica None quando a variável não está configurada.
+# Cliente privilegiado (service role) — usado para operações internas de
+# dados (tabelas). A service role ignora Row Level Security (RLS), o que
+# permite habilitar RLS no banco sem quebrar o backend. Fica None quando a
+# variável não está configurada.
 supabase_admin: Client | None = (
     create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     if SUPABASE_SERVICE_ROLE_KEY
     else None
 )
+
+# Cliente preferencial para acesso a TABELAS (dados): usa a service role
+# quando disponível (ignora RLS) e cai para o cliente anon caso contrário.
+# Operações de Auth (sign_up, sign_in, get_user etc.) continuam no `supabase`.
+db: Client = supabase_admin if supabase_admin else supabase

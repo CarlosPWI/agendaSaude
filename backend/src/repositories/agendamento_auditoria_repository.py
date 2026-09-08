@@ -1,7 +1,7 @@
 import json
 from datetime import date, datetime
 
-from src.config.database import supabase
+from src.config.database import db
 
 
 def _serializar(valor):
@@ -33,7 +33,7 @@ class AgendamentoAuditoriaRepository:
         }
 
         response = (
-            supabase
+            db
             .table(cls.table)
             .insert(payload)
             .execute()
@@ -44,7 +44,7 @@ class AgendamentoAuditoriaRepository:
     @classmethod
     def listar_por_agendamento(cls, agendamento_id: int):
         response = (
-            supabase
+            db
             .table(cls.table)
             .select("*")
             .eq("agendamento_id", agendamento_id)

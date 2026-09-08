@@ -1,5 +1,5 @@
 from src.repositories.base_repository import BaseRepository
-from src.config.database import supabase
+from src.config.database import db
 from src.services.base_service import now
 
 class UsuarioRepository(BaseRepository):
@@ -9,7 +9,7 @@ class UsuarioRepository(BaseRepository):
     @classmethod
     def possui_agendamentos(cls, value) -> bool:
         response = (
-            supabase
+            db
             .table("agendamentos")
             .select("agendamento_id")
             .eq("usuario_id", value)
@@ -25,7 +25,7 @@ class UsuarioRepository(BaseRepository):
             return {}
 
         response = (
-            supabase
+            db
             .table("usuarios")
             .select("usuario_id, nome, email")
             .in_("usuario_id", list(ids))
@@ -40,7 +40,7 @@ class UsuarioRepository(BaseRepository):
     @classmethod
     def buscar_por_id(cls, value):
         response = (
-            supabase
+            db
             .table(cls.table)
             .select("usuario_id, email, nome, criado_em, atualizado_em, tiposusuarios(*)")
             .eq(cls.id_field, value)
@@ -52,7 +52,7 @@ class UsuarioRepository(BaseRepository):
     @classmethod
     def buscar_por_email(cls, email):
         response = (
-            supabase
+            db
             .table(cls.table)
             .select("usuario_id, email, nome, criado_em, atualizado_em, tiposusuarios(*)")
             .eq("email", email)
@@ -65,5 +65,5 @@ class UsuarioRepository(BaseRepository):
     def atualizar(cls, value, data):
         payload = cls._to_dict(data)
         payload["atualizado_em"] = now()
-        response = supabase.table(cls.table).update(payload).eq(cls.id_field, value).execute()
+        response = db.table(cls.table).update(payload).eq(cls.id_field, value).execute()
         return response.data[0] if response.data else None

@@ -47,7 +47,7 @@ class UsuarioRepository(BaseRepository):
             .maybe_single()
             .execute()
         )
-        return response.data if response.data else None
+        return cls._extrair_data(response)
 
     @classmethod
     def buscar_por_email(cls, email):
@@ -59,7 +59,7 @@ class UsuarioRepository(BaseRepository):
             .maybe_single()
             .execute()
         )
-        return response.data if response.data else None
+        return cls._extrair_data(response)
 
     @classmethod
     def atualizar(cls, value, data):

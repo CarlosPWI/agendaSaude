@@ -123,7 +123,11 @@ class AuthService:
             .execute()
         )
 
-        usuario = usuario_response.data
+        usuario = (
+            usuario_response.data
+            if usuario_response and usuario_response.data
+            else None
+        )
 
         if not usuario:
             raise ValidationException(

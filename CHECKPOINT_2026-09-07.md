@@ -123,4 +123,23 @@ real validada; envio real via Brevo confirmado.
   arquivo da página.
 
 ---
+
+## 12. Varredura de saúde do app (health check)
+
+- `pytest`: **50 passed** · `tsc --noEmit`: OK · `npm run build`: OK · `py_compile`: OK.
+- Servidores: backend `/health` 200 · frontend 200.
+- Sem `console.log`, `TODO`, `FIXME` ou `debugger` no código-fonte.
+- Smoke E2E real: **8/8** (cadastro, login, e-mail obrigatório 422, agendamento,
+  auditoria criado/cancelado, refresh de sessão).
+
+### Bug real encontrado e corrigido
+- **`BaseRepository.buscar_por_id` e consultas `.maybe_single()`**: quando o
+  registro não existe, o cliente supabase-py retorna `None` → `AttributeError`
+  (HTTP 500) no lugar de "não encontrado". Atingia validação de agente/paciente
+  inválido e o login de usuário sem linha em `usuarios` (A-5).
+- Correção: helper `_extrair_data()` (retorna `None` se resposta vazia) aplicado
+  em `base_repository`, `usuario_repository` e `auth_service`.
+- Testes de regressão adicionados (`tests/test_base_repository.py`).
+
+---
 *Documento gerado automaticamente ao final da sessão (checkpoint).*

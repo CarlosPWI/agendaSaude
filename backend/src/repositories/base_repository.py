@@ -64,7 +64,17 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data if response.data else None
+        return cls._extrair_data(response)
+
+    @staticmethod
+    def _extrair_data(response):
+        """Retorna os dados de uma resposta PostgREST de forma segura.
+
+        Em consultas com `.maybe_single()`, o cliente supabase-py pode
+        retornar `None` quando não há registro — antes isso gerava
+        AttributeError (HTTP 500) em vez de "não encontrado".
+        """
+        return response.data if response and response.data else None
 
     @classmethod
     def atualizar(cls, value, data):

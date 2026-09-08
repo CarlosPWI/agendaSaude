@@ -13,6 +13,7 @@ import { ReschedulePage } from "./pages/ReschedulePage";
 import { PlannerPage } from "./pages/PlannerPage";
 import { PacientesPage } from "./pages/PacientesPage";
 import { AgentesComunitariosPage } from "./pages/AgentesComunitariosPage";
+import { UpVisualPage } from "./pages/UpVisualPage";
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: "agentescomunitarios",
         Component: AgentesComunitariosPage,
+      },
+      {
+        path: "inteligencia",
+        Component: UpVisualPage,
       },
       {
         path: "novo-agendamento",

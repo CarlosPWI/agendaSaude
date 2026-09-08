@@ -7,6 +7,7 @@ import {
   LogOut,
   Users,
   Stethoscope,
+  TrendingUp,
 } from "lucide-react";
 
 const menuItens = [
@@ -23,6 +24,7 @@ const menuItens = [
     label: "Agentes",
     icon: Stethoscope,
   },
+  { to: "/dashboard/inteligencia", label: "Up Visual", icon: TrendingUp },
 ];
 
 export function DashboardLayout() {

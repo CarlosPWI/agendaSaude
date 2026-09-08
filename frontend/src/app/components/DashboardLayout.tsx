@@ -77,9 +77,9 @@ export function DashboardLayout() {
           </div>
         </div>
 
-        <nav className="border-t border-gray-100">
+        <nav className="border-t border-gray-100 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex gap-1 overflow-x-auto">
+            <div className="flex items-center gap-2 overflow-x-auto py-2.5">
               {menuItens.map((item) => {
                 const Icon = item.icon;
 
@@ -89,10 +89,10 @@ export function DashboardLayout() {
                     to={item.to}
                     end={item.to === "/dashboard"}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                         isActive
-                          ? "text-blue-600 border-blue-600"
-                          : "text-gray-600 border-transparent hover:text-blue-600 hover:border-gray-300"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                       }`
                     }
                   >

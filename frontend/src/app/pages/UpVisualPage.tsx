@@ -26,8 +26,6 @@ import {
   TrendingUp,
   CalendarDays,
   Users,
-  Banknote,
-  CircleDollarSign,
   MessageCircle,
   AlertTriangle,
   Sparkles,
@@ -48,9 +46,6 @@ const CORES_PIE = ["#10b981", "#6366f1", "#f59e0b", "#ec4899", "#0ea5e9"];
 const COR_EMERALD = "#10b981";
 const COR_ROSE = "#f43f5e";
 const COR_AMBER = "#f59e0b";
-
-const brl = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function UpVisualPage() {
   const hoje = new Date();
@@ -96,17 +91,12 @@ export function UpVisualPage() {
     const compareceu = dadosTela.filter((r) => r.status === "compareceu");
     const cancelado = dadosTela.filter((r) => r.status === "cancelado");
     const noShow = dadosTela.filter((r) => r.status === "no_show");
-    const faltas = [...cancelado, ...noShow];
     const taxaComparecimento = total ? Math.round((compareceu.length / total) * 100) : 0;
-    const receitaEfetivada = compareceu.reduce((s, r) => s + r.valor, 0);
-    const receitaPerdida = faltas.reduce((s, r) => s + r.valor, 0);
     return {
       total,
       taxaComparecimento,
       cancelados: cancelado.length,
       noShow: noShow.length,
-      receitaEfetivada,
-      receitaPerdida,
     };
   }, [dadosTela]);
 
@@ -191,39 +181,39 @@ export function UpVisualPage() {
   return (
     <div className="space-y-5">
       {/* Barra sticky de filtros */}
-      <div className="sticky top-[104px] z-20 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-3 shadow-sm flex flex-wrap items-center gap-3">
+      <div className="sticky top-[104px] z-20 rounded-xl border dark:border-slate-700 dark:bg-slate-900/90 backdrop-blur p-3 shadow-sm flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 mr-auto">
           <span className="w-9 h-9 rounded-lg bg-blue-600 text-white grid place-items-center">
             <TrendingUp className="w-5 h-5" />
           </span>
           <div>
-            <h2 className="text-lg font-bold text-slate-800 leading-tight">
+            <h2 className="text-lg font-bold dark:text-slate-100 leading-tight">
               Inteligência & Performance
             </h2>
-            <p className="text-xs text-slate-500">{tituloData}</p>
+            <p className="text-xs dark:dark:text-slate-500">{tituloData}</p>
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-xs text-slate-600">
+        <label className="flex items-center gap-2 text-xs dark:text-slate-300">
           Período
           <select
             value={diaSelecionado ? "dia" : "mes"}
             onChange={(e) =>
               setDiaSelecionado(e.target.value === "dia" ? hoje.getDate() : null)
             }
-            className="border rounded-lg px-2 py-1.5 text-sm bg-white"
+            className="border rounded-lg px-2 py-1.5 text-sm dark:bg-slate-900"
           >
             <option value="mes">Mês atual</option>
             <option value="dia">Hoje</option>
           </select>
         </label>
 
-        <label className="flex items-center gap-2 text-xs text-slate-600">
+        <label className="flex items-center gap-2 text-xs dark:text-slate-300">
           Médico
           <select
             value={medico}
             onChange={(e) => setMedico(e.target.value)}
-            className="border rounded-lg px-2 py-1.5 text-sm bg-white"
+            className="border rounded-lg px-2 py-1.5 text-sm dark:bg-slate-900"
           >
             <option value="todos">Todos</option>
             {medicos.map((m) => (
@@ -232,12 +222,12 @@ export function UpVisualPage() {
           </select>
         </label>
 
-        <label className="flex items-center gap-2 text-xs text-slate-600">
+        <label className="flex items-center gap-2 text-xs dark:text-slate-300">
           Especialidade
           <select
             value={especialidade}
             onChange={(e) => setEspecialidade(e.target.value)}
-            className="border rounded-lg px-2 py-1.5 text-sm bg-white"
+            className="border rounded-lg px-2 py-1.5 text-sm dark:bg-slate-900"
           >
             <option value="todas">Todas</option>
             {especialidades.map((e) => (
@@ -275,20 +265,6 @@ export function UpVisualPage() {
             detalhe="sobre o total do período"
           />
           <Kpi
-            icon={<CircleDollarSign className="w-5 h-5" />}
-            cor="bg-emerald-50 text-emerald-600"
-            rotulo="Receita efetivada"
-            valor={brl(kpis.receitaEfetivada)}
-            detalhe="consultas realizadas"
-          />
-          <Kpi
-            icon={<Banknote className="w-5 h-5" />}
-            cor="bg-rose-50 text-rose-600"
-            rotulo="Receita perdida"
-            valor={brl(kpis.receitaPerdida)}
-            detalhe="cancelamentos + faltas"
-          />
-          <Kpi
             icon={<AlertTriangle className="w-5 h-5" />}
             cor="bg-amber-50 text-amber-600"
             rotulo="Taxa de falta"
@@ -317,13 +293,13 @@ export function UpVisualPage() {
         </div>
 
         {/* Gráfico de sazonalidade / horário */}
-        <div className="col-span-12 lg:col-span-7 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700 mb-1">
+        <div className="col-span-12 lg:col-span-7 rounded-xl border dark:border-slate-700 dark:bg-slate-900 p-4 shadow-sm">
+          <h3 className="text-sm font-semibold dark:text-slate-200 mb-1">
             {diaSelecionado
               ? "Faltas vs. comparecimentos por horário"
               : "Sazonalidade — faltas vs. comparecimentos por dia"}
           </h3>
-          <p className="text-xs text-slate-400 mb-3">
+          <p className="text-xs dark:text-slate-500 mb-3">
             Clique em um dia no calendário para filtrar até o nível de horário.
           </p>
           <ResponsiveContainer width="100%" height={260}>
@@ -340,15 +316,15 @@ export function UpVisualPage() {
         </div>
 
         {/* Engajamento por faixa etária */}
-        <div className="col-span-12 lg:col-span-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700 mb-1">
+        <div className="col-span-12 lg:col-span-5 rounded-xl border dark:border-slate-700 dark:bg-slate-900 p-4 shadow-sm">
+          <h3 className="text-sm font-semibold dark:text-slate-200 mb-1">
             Engajamento por faixa etária
           </h3>
-          <p className="text-xs text-slate-400 mb-3">
+          <p className="text-xs dark:text-slate-500 mb-3">
             Distribuição dos comparecimentos por idade.
           </p>
           {dadosPizza.length === 0 ? (
-            <p className="text-sm text-slate-400 py-16 text-center">
+            <p className="text-sm dark:text-slate-500 py-16 text-center">
               Sem dados no período selecionado
             </p>
           ) : (
@@ -374,14 +350,14 @@ export function UpVisualPage() {
         </div>
 
         {/* Insights */}
-        <div className="col-span-12 lg:col-span-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <div className="col-span-12 lg:col-span-5 rounded-xl border dark:border-slate-700 dark:bg-slate-900 p-4 shadow-sm">
+          <h3 className="text-sm font-semibold dark:text-slate-200 mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-blue-600" />
             Insights & ações sugeridas
           </h3>
           <div className="space-y-3">
             {insights.length === 0 && (
-              <p className="text-sm text-slate-400">Sem dados suficientes.</p>
+              <p className="text-sm dark:text-slate-500">Sem dados suficientes.</p>
             )}
             {insights.map((ins, i) => (
               <div
@@ -402,23 +378,23 @@ export function UpVisualPage() {
         </div>
 
         {/* Risco de no-show + contato */}
-        <div className="col-span-12 lg:col-span-7 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+        <div className="col-span-12 lg:col-span-7 rounded-xl border dark:border-slate-700 dark:bg-slate-900 p-4 shadow-sm">
+          <h3 className="text-sm font-semibold dark:text-slate-200 mb-1 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
             Risco de no-show — pacientes do período
           </h3>
-          <p className="text-xs text-slate-400 mb-3">
+          <p className="text-xs dark:text-slate-500 mb-3">
             Score alto = histórico de faltas e/ou distância elevada.
           </p>
           {risco.length === 0 ? (
-            <p className="text-sm text-slate-400 py-10 text-center">
+            <p className="text-sm dark:text-slate-500 py-10 text-center">
               Nenhum paciente de alto risco neste período.
             </p>
           ) : (
             <div className="overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-slate-400 border-b">
+                  <tr className="text-left text-xs dark:text-slate-500 border-b">
                     <th className="py-2 font-medium">Paciente</th>
                     <th className="py-2 font-medium">Horário</th>
                     <th className="py-2 font-medium">Faixa</th>
@@ -430,10 +406,10 @@ export function UpVisualPage() {
                 <tbody>
                   {risco.map((p, i) => (
                     <tr key={i} className="border-b border-slate-100">
-                      <td className="py-2 font-medium text-slate-700">{p.nome}</td>
-                      <td className="py-2 text-slate-500">{p.horario}</td>
-                      <td className="py-2 text-slate-500">{p.faixa}</td>
-                      <td className="py-2 text-slate-500">{p.distancia} km</td>
+                      <td className="py-2 font-medium dark:text-slate-200">{p.nome}</td>
+                      <td className="py-2 dark:dark:text-slate-500">{p.horario}</td>
+                      <td className="py-2 dark:dark:text-slate-500">{p.faixa}</td>
+                      <td className="py-2 dark:dark:text-slate-500">{p.distancia} km</td>
                       <td className="py-2">
                         <span
                           className={[
@@ -468,7 +444,7 @@ export function UpVisualPage() {
         </div>
       </div>
 
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] dark:text-slate-500">
         Dados ilustrativos (mock determinístico) para demonstração da tela
         "Up Visual". Integração com dados reais pode ser feita no módulo{" "}
         <code className="bg-slate-100 px-1 rounded">services/upVisualData.ts</code>.
@@ -491,13 +467,13 @@ function Kpi({
   detalhe: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+    <div className="rounded-xl border dark:border-slate-700 dark:bg-slate-900 p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className={`w-9 h-9 rounded-lg grid place-items-center mb-3 ${cor}`}>
         {icon}
       </div>
-      <p className="text-xs text-slate-500">{rotulo}</p>
-      <p className="text-2xl font-bold text-slate-800 mt-0.5">{valor}</p>
-      <p className="text-[11px] text-slate-400 mt-0.5">{detalhe}</p>
+      <p className="text-xs dark:dark:text-slate-500">{rotulo}</p>
+      <p className="text-2xl font-bold dark:text-slate-100 mt-0.5">{valor}</p>
+      <p className="text-[11px] dark:text-slate-500 mt-0.5">{detalhe}</p>
     </div>
   );
 }

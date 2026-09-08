@@ -580,7 +580,7 @@ export function PlannerPage() {
                                     )
                                   )
                                 }
-                                className="border rounded-md px-2 py-1 text-sm bg-white"
+                                className="border rounded-md px-2 py-1 text-sm dark:bg-slate-900"
                               >
                                 {statusList.map(
                                   (
@@ -719,7 +719,7 @@ export function PlannerPage() {
                                   )
                                 )
                               }
-                              className="w-full border rounded-md px-2 py-1 text-xs bg-white"
+                              className="w-full border rounded-md px-2 py-1 text-xs dark:bg-slate-900"
                             >
                               {statusList.map(
                                 (

@@ -45,15 +45,15 @@ export function OcupacaoCalendar({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border dark:border-slate-700 dark:bg-slate-900 p-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-slate-700">
+        <h3 className="text-sm font-semibold dark:text-slate-200">
           Ocupação —{" "}
           <span className="capitalize">
             {format(primeiro, "MMMM yyyy", { locale: ptBR })}
           </span>
         </h3>
-        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+        <div className="flex items-center gap-2 text-[10px] dark:dark:text-slate-500">
           <span className="flex items-center gap-1">
             <i className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
             &lt;50%
@@ -73,7 +73,7 @@ export function OcupacaoCalendar({
         {DIAS_SEMANA.map((d, i) => (
           <div
             key={i}
-            className="text-center text-[10px] font-medium text-slate-400 py-1"
+            className="text-center text-[10px] font-medium dark:text-slate-500 py-1"
           >
             {d}
           </div>
@@ -102,7 +102,7 @@ export function OcupacaoCalendar({
                 noMes ? "cursor-pointer" : "opacity-20 cursor-default",
                 info
                   ? `${corOcupacao(info.ocupacao)} text-white`
-                  : "bg-slate-100 text-slate-400",
+                  : "dark:bg-slate-800 dark:text-slate-500",
                 selecionadoHoje
                   ? "ring-2 ring-blue-600 ring-offset-1"
                   : "hover:scale-105",

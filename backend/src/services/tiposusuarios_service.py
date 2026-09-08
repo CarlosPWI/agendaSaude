@@ -11,8 +11,8 @@ class TiposUsuariosService:
         return TiposUsuariosRepository.criar(data)
 
     @staticmethod
-    def listar():
-        return TiposUsuariosRepository.listar()
+    def listar(limit: int = 100, offset: int = 0):
+        return TiposUsuariosRepository.listar(limit=limit, offset=offset)
 
     @staticmethod
     def buscar_por_id(id: int):

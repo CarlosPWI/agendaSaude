@@ -28,7 +28,10 @@ class PacienteBase(BaseModel):
         description="Número do SUS"
     )
 
-    email: EmailStr | None = None
+    email: EmailStr = Field(
+        ...,
+        description="E-mail do paciente (obrigatório para notificações)"
+    )
 
     telefone: str | None = Field(
         default=None,

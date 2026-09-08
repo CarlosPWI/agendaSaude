@@ -1,5 +1,8 @@
 import { createBrowserRouter } from "react-router";
 import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { AppointmentsPage } from "./pages/AppointmentsPage";
 import { NewAppointmentPage } from "./pages/NewAppointmentPage";
@@ -8,11 +11,25 @@ import { EditPatientPage } from "./pages/EditPatientPage";
 import { NewAgenteComunitarioPage } from "./pages/NewAgenteComunitarioPage";
 import { ReschedulePage } from "./pages/ReschedulePage";
 import { PlannerPage } from "./pages/PlannerPage";
+import { PacientesPage } from "./pages/PacientesPage";
+import { AgentesComunitariosPage } from "./pages/AgentesComunitariosPage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: LoginPage,
+  },
+  {
+    path: "/register",
+    Component: RegisterPage,
+  },
+  {
+    path: "/forgot-password",
+    Component: ForgotPasswordPage,
+  },
+  {
+    path: "/reset-password",
+    Component: ResetPasswordPage,
   },
   {
     path: "/dashboard",
@@ -25,6 +42,14 @@ export const router = createBrowserRouter([
       {
         path: "consultas",
         Component: AppointmentsPage,
+      },
+      {
+        path: "pacientes",
+        Component: PacientesPage,
+      },
+      {
+        path: "agentescomunitarios",
+        Component: AgentesComunitariosPage,
       },
       {
         path: "novo-agendamento",

@@ -18,8 +18,8 @@ class PacienteService:
         return PacienteRepository.criar(payload)
 
     @staticmethod
-    def listar():
-        return PacienteRepository.listar()
+    def listar(limit: int = 100, offset: int = 0):
+        return PacienteRepository.listar(limit=limit, offset=offset)
 
     @staticmethod
     def buscar_por_id(id: int):

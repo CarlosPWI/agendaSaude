@@ -10,8 +10,8 @@ class AgenteComunitarioService:
         return AgenteComunitarioRepository.criar(data)
 
     @staticmethod
-    def listar():
-        return AgenteComunitarioRepository.listar()
+    def listar(limit: int = 100, offset: int = 0):
+        return AgenteComunitarioRepository.listar(limit=limit, offset=offset)
 
     @staticmethod
     def buscar_por_id(id: int):

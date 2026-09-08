@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { handleUnauthorized } from "../services/session";
+import { apiFetch } from "../services/apiClient";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function NewPatientPage() {
   const navigate = useNavigate();
@@ -8,6 +12,8 @@ export function NewPatientPage() {
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const [loading, setLoading] = useState(false);
+
+  const [emailError, setEmailError] = useState("");
 
   const [agentes, setAgentes] = useState<any[]>([]);
 
@@ -30,12 +36,7 @@ export function NewPatientPage() {
     try {
       const token = localStorage.getItem("token");
 
-      console.log(
-        "BUSCANDO AGENTES:",
-        `${apiUrl}/agentescomunitarios/`
-      );
-
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/agentescomunitarios/`,
         {
           headers: {
@@ -46,22 +47,11 @@ export function NewPatientPage() {
 
       const data = await response.json();
 
-      console.log(
-        "AGENTES COMUNITARIOS:",
-        data
-      );
-
-      console.log(
-        "PRIMEIRO AGENTE:",
-        data.data?.[0] || data[0]
-      );
+      handleUnauthorized(response.status);
 
       setAgentes(data.data || data);
     } catch (error) {
-      console.error(
-        "ERRO AO BUSCAR AGENTES:",
-        error
-      );
+      console.error(error);
 
       toast.error(
         "Erro ao carregar agentes comunitários"
@@ -113,6 +103,26 @@ export function NewPatientPage() {
         return;
       }
 
+      const email = formData.email.trim();
+
+      if (!email) {
+        setEmailError(
+          "O e-mail é obrigatório"
+        );
+
+        return;
+      }
+
+      if (!EMAIL_RE.test(email)) {
+        setEmailError(
+          "Informe um e-mail válido (ex.: nome@provedor.com)"
+        );
+
+        return;
+      }
+
+      setEmailError("");
+
       setLoading(true);
 
       const token =
@@ -144,29 +154,7 @@ export function NewPatientPage() {
         status: formData.status,
       };
 
-      console.log(
-        "=================================="
-      );
-
-      console.log(
-        "PAYLOAD NOVO PACIENTE:"
-      );
-
-      console.log(payload);
-
-      console.log(
-        "JSON STRINGIFY:"
-      );
-
-      console.log(
-        JSON.stringify(payload, null, 2)
-      );
-
-      console.log(
-        "=================================="
-      );
-
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/pacientes/`,
         {
           method: "POST",
@@ -179,20 +167,11 @@ export function NewPatientPage() {
         }
       );
 
-      console.log(
-        "STATUS RESPONSE:",
-        response.status
-      );
-
       const data = await response.json();
 
-      console.log(
-        "RESPONSE BACKEND:"
-      );
-
-      console.log(data);
-
       if (!response.ok) {
+        handleUnauthorized(response.status);
+
         throw new Error(
           data.message ||
             data.detail ||
@@ -208,10 +187,6 @@ export function NewPatientPage() {
         "/dashboard/novo-agendamento"
       );
     } catch (error: any) {
-      console.error(
-        "ERRO AO CRIAR PACIENTE:"
-      );
-
       console.error(error);
 
       toast.error(
@@ -266,20 +241,15 @@ export function NewPatientPage() {
               value={String(
                 formData.agentecomunitario_id
               )}
-              onChange={(e) => {
-                console.log(
-                  "AGENTE SELECIONADO:",
-                  e.target.value
-                );
-
+              onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
                   agentecomunitario_id:
                     Number(
                       e.target.value
                     ),
-                }));
-              }}
+                }))
+              }
               className="w-full border rounded-md px-3 py-2"
             >
               <option value="0">
@@ -381,22 +351,34 @@ export function NewPatientPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                E-mail
+                E-mail <span className="text-red-500">*</span>
               </label>
 
               <input
                 type="email"
+                required
                 value={formData.email}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFormData((prev) => ({
                     ...prev,
-                    email:
-                      e.target.value,
-                  }))
-                }
-                className="w-full border rounded-md px-3 py-2"
+                    email: e.target.value,
+                  }));
+
+                  if (emailError) {
+                    setEmailError("");
+                  }
+                }}
+                className={`w-full border rounded-md px-3 py-2 ${
+                  emailError ? "border-red-500" : ""
+                }`}
                 placeholder="email@exemplo.com"
               />
+
+              {emailError && (
+                <p className="text-sm text-red-600">
+                  {emailError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

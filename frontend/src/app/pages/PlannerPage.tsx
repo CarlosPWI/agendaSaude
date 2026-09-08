@@ -13,8 +13,11 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
+import { handleUnauthorized } from "../services/session";
 
 import { fetchAgendamentos } from "../services/agendamentoService";
+
+import { HORARIOS_DISPONIVEIS } from "../constants/horarios";
 
 import { Button } from "../components/ui/button";
 
@@ -31,6 +34,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "../components/ui/tabs";
+
+import { apiFetch } from "../services/apiClient";
 
 interface Agendamento {
   id: string;
@@ -87,7 +92,7 @@ export function PlannerPage() {
       const token =
         localStorage.getItem("token");
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/statusagendamento/`,
         {
           headers: {
@@ -98,6 +103,8 @@ export function PlannerPage() {
 
       const data =
         await response.json();
+
+      handleUnauthorized(response.status);
 
       setStatusList(
         data.data || data
@@ -115,48 +122,25 @@ export function PlannerPage() {
     try {
       setLoading(true);
 
-      const response =
+      const lista =
         await fetchAgendamentos();
 
-      const lista =
-        response?.data ||
-        response?.agendamentos ||
-        response ||
-        [];
-
       const agendamentosFormatados =
-        lista.map((item: any) => {
-          const dataInicio = new Date(
-            item.data_hora_inicio
-          );
+        lista.map((item) => ({
+          id: item.id,
 
-          return {
-            id: String(
-              item.agendamento_id
-            ),
+          data: item.date,
 
-            data: format(
-              dataInicio,
-              "yyyy-MM-dd"
-            ),
+          horario: item.time,
 
-            horario: format(
-              dataInicio,
-              "HH:mm"
-            ),
+          status: item.statusNome,
 
-            status:
-              item.statusagendamento
-                ?.nome || "Agendado",
+          statusagendamento_id:
+            item.statusagendamento_id,
 
-            statusagendamento_id:
-              item.statusagendamento_id,
-
-            pacienteNome:
-              item.pacientes?.nome ||
-              `Paciente ${item.paciente_id}`,
-          };
-        });
+          pacienteNome:
+            item.patientName,
+        }));
 
       setAgendamentos(
         agendamentosFormatados
@@ -172,16 +156,7 @@ export function PlannerPage() {
     }
   }
 
-  const timeSlots = Array.from(
-    { length: 11 },
-    (_, i) => {
-      const hour = i + 8;
-
-      return `${hour
-        .toString()
-        .padStart(2, "0")}:00`;
-    }
-  );
+  const timeSlots = HORARIOS_DISPONIVEIS;
 
   function getDayAppointments(
     date: Date
@@ -309,7 +284,7 @@ export function PlannerPage() {
       */
 
       const responseAgendamento =
-        await fetch(
+        await apiFetch(
           `${apiUrl}/agendamentos/${agendamentoId}/`,
           {
             headers: {
@@ -326,6 +301,8 @@ export function PlannerPage() {
         agendamentoData;
 
       if (!responseAgendamento.ok) {
+        handleUnauthorized(responseAgendamento.status);
+
         throw new Error(
           "Erro ao buscar agendamento"
         );
@@ -359,7 +336,7 @@ export function PlannerPage() {
         Atualiza agendamento
       */
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/agendamentos/${agendamentoId}/`,
         {
           method: "PUT",
@@ -381,6 +358,8 @@ export function PlannerPage() {
         await response.json();
 
       if (!response.ok) {
+        handleUnauthorized(response.status);
+
         throw new Error(
           data.message ||
             data.detail?.[0]?.msg ||

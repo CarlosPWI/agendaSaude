@@ -12,14 +12,29 @@ class AgendamentoRepository(BaseRepository):
             .select("*") \
             .lte("data_hora_inicio", fim) \
             .gte("data_hora_fim", inicio) \
+            .eq("cancelado", False) \
             .execute()
+
+    @classmethod
+    def cancelar(cls, value):
+        payload = {"cancelado": True}
+        payload["atualizado_em"] = now()
+
+        response = (
+            supabase
+            .table(cls.table)
+            .update(payload)
+            .eq(cls.id_field, value)
+            .execute()
+        )
+        return response.data[0] if response.data else None
     
     @classmethod
     def atualizar(cls, value, data):
 
         payload = cls._to_dict(
             data,
-            exclude={"criado_em, data_hora_fim"}
+            exclude={"criado_em"}
         )
         payload["atualizado_em"] = now()
 
@@ -30,16 +45,27 @@ class AgendamentoRepository(BaseRepository):
             .eq(cls.id_field, value)
             .execute()
         )
-        return response.data[0] if response and response.data[0] else None
+        return response.data[0] if response.data else None
 
     @classmethod
-    def listar(cls):
+    def listar(
+        cls,
+        limit: int | None = None,
+        offset: int | None = None,
+    ):
 
-        response = (
+        query = (
             supabase
             .table(cls.table)
             .select("*, pacientes(*), statusagendamento(*), usuarios(*, tiposusuarios(*))")
-            .execute()
         )
 
-        return response.data if response and response.data else None
+        if limit is not None:
+            query = query.limit(limit)
+
+        if offset is not None:
+            query = query.offset(offset)
+
+        response = query.execute()
+
+        return response.data if response.data else None

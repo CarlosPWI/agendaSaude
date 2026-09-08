@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,11 +19,10 @@ app = FastAPI(
     version="1.0"
 )
 
-origins = [
-    "https://agenda-saude-omega.vercel.app",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+origins = os.getenv(
+    "CORS_ORIGINS",
+    "https://agenda-saude-omega.vercel.app,http://localhost:5173,http://127.0.0.1:5173"
+).split(",")
 
 app.add_middleware(
     CORSMiddleware,

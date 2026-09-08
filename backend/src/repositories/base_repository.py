@@ -1,7 +1,14 @@
 import json
+from datetime import date, datetime
 
 from src.config.database import supabase
 from src.services.base_service import now
+
+
+def _serializer(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return str(value)
 
 
 class BaseRepository:
@@ -24,19 +31,26 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data[0] if response and response.data[0] else None
+        return response.data[0] if response.data else None
 
     @classmethod
-    def listar(cls):
+    def listar(
+        cls,
+        limit: int | None = None,
+        offset: int | None = None,
+    ):
 
-        response = (
-            supabase
-            .table(cls.table)
-            .select("*")
-            .execute()
-        )
+        query = supabase.table(cls.table).select("*")
 
-        return response.data if response and response.data else None
+        if limit is not None:
+            query = query.limit(limit)
+
+        if offset is not None:
+            query = query.offset(offset)
+
+        response = query.execute()
+
+        return response.data if response.data else None
 
     @classmethod
     def buscar_por_id(cls, value):
@@ -50,7 +64,7 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data if response and response.data else None
+        return response.data if response.data else None
 
     @classmethod
     def atualizar(cls, value, data):
@@ -70,7 +84,7 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data[0] if response and response.data[0] else None
+        return response.data[0] if response.data else None
 
     @classmethod
     def deletar(cls, value):
@@ -83,7 +97,7 @@ class BaseRepository:
             .execute()
         )
 
-        return response.data[0] if response and response.data[0] else None
+        return response.data[0] if response.data else None
 
     @staticmethod
     def _to_dict(data, exclude=None):
@@ -109,4 +123,6 @@ class BaseRepository:
         else:
             raise TypeError("Formato inválido")
 
-        return json.loads(json.dumps(payload, default=str))
+        return json.loads(
+            json.dumps(payload, default=_serializer)
+        )

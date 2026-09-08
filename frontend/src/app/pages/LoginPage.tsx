@@ -1,5 +1,5 @@
-import { useState, FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect, FormEvent } from "react";
+import { Link, useNavigate } from "react-router";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -8,7 +8,26 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
 
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("registerSuccess")) {
+      sessionStorage.removeItem("registerSuccess");
+
+      setSuccess(
+        "Conta criada com sucesso! Confirme seu e-mail antes de entrar."
+      );
+    }
+
+    if (sessionStorage.getItem("resetSuccess")) {
+      sessionStorage.removeItem("resetSuccess");
+
+      setSuccess(
+        "Senha alterada com sucesso! Faça login com a nova senha."
+      );
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -46,12 +65,26 @@ export function LoginPage() {
         );
       }
 
-      if (data.token) {
+      const token =
+        data.access_token || data.token;
+
+      if (token) {
         localStorage.setItem(
           "token",
-          data.token
+          token
         );
+        setSuccess("");
+      } else {
+        console.warn(
+          "TOKEN DE ACESSO NÃO RETORNADO NO LOGIN"
+        );
+      }
 
+      if (data.refresh_token) {
+        localStorage.setItem(
+          "refresh_token",
+          data.refresh_token
+        );
       }
 
       /*
@@ -59,8 +92,8 @@ export function LoginPage() {
       */
 
       const usuario =
-        data.usuario ||
         data.user ||
+        data.usuario ||
         data.data ||
         null;
 
@@ -139,6 +172,12 @@ export function LoginPage() {
             </p>
           )}
 
+          {success && (
+            <p style={styles.success}>
+              {success}
+            </p>
+          )}
+
           <div style={styles.actions}>
             <button
               type="submit"
@@ -151,6 +190,19 @@ export function LoginPage() {
             </button>
           </div>
         </form>
+
+        <p style={styles.footerText}>
+          <Link to="/forgot-password" style={styles.link}>
+            Esqueci minha senha
+          </Link>
+        </p>
+
+        <p style={styles.footerText}>
+          Não tem uma conta?{" "}
+          <Link to="/register" style={styles.link}>
+            Criar conta
+          </Link>
+        </p>
       </div>
     </div>
   );
@@ -213,6 +265,12 @@ const styles = {
     marginBottom: "16px",
   },
 
+  success: {
+    color: "#188038",
+    fontSize: "14px",
+    marginBottom: "16px",
+  },
+
   actions: {
     display: "flex",
     justifyContent: "flex-end",
@@ -227,5 +285,16 @@ const styles = {
     fontSize: "14px",
     fontWeight: "500",
     cursor: "pointer",
+  },
+
+  footerText: {
+    textAlign: "center" as const,
+    fontSize: "14px",
+    marginTop: "24px",
+  },
+
+  link: {
+    color: "#1a73e8",
+    textDecoration: "none",
   },
 };

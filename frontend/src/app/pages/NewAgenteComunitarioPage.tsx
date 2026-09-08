@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { handleUnauthorized } from "../services/session";
+import { apiFetch } from "../services/apiClient";
 
 export function NewAgenteComunitarioPage() {
   const navigate = useNavigate();
@@ -46,29 +48,7 @@ export function NewAgenteComunitarioPage() {
         nome: formData.nome.trim(),
       };
 
-      console.log(
-        "=================================="
-      );
-
-      console.log(
-        "PAYLOAD AGENTE COMUNITARIO:"
-      );
-
-      console.log(payload);
-
-      console.log(
-        "JSON STRINGIFY:"
-      );
-
-      console.log(
-        JSON.stringify(payload, null, 2)
-      );
-
-      console.log(
-        "=================================="
-      );
-
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/agentescomunitarios/`,
         {
           method: "POST",
@@ -81,20 +61,11 @@ export function NewAgenteComunitarioPage() {
         }
       );
 
-      console.log(
-        "STATUS RESPONSE:",
-        response.status
-      );
-
       const data = await response.json();
 
-      console.log(
-        "RESPONSE BACKEND:"
-      );
-
-      console.log(data);
-
       if (!response.ok) {
+        handleUnauthorized(response.status);
+
         throw new Error(
           data.message ||
             data.detail ||
@@ -110,10 +81,6 @@ export function NewAgenteComunitarioPage() {
         "/dashboard/pacientes/novo"
       );
     } catch (error: any) {
-      console.error(
-        "ERRO AO CRIAR AGENTE:"
-      );
-
       console.error(error);
 
       toast.error(

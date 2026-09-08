@@ -1,17 +1,52 @@
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useNavigate, Navigate, NavLink } from "react-router";
 import { Button } from "./ui/button";
-import { Calendar, LogOut } from "lucide-react";
+import {
+  Calendar,
+  CalendarDays,
+  CalendarPlus,
+  LogOut,
+  Users,
+  Stethoscope,
+} from "lucide-react";
+
+const menuItens = [
+  { to: "/dashboard", label: "Planner", icon: Calendar },
+  { to: "/dashboard/consultas", label: "Consultas", icon: CalendarDays },
+  {
+    to: "/dashboard/novo-agendamento",
+    label: "Novo Agendamento",
+    icon: CalendarPlus,
+  },
+  { to: "/dashboard/pacientes", label: "Pacientes", icon: Users },
+  {
+    to: "/dashboard/agentescomunitarios",
+    label: "Agentes",
+    icon: Stethoscope,
+  },
+];
 
 export function DashboardLayout() {
   const navigate = useNavigate();
 
-  const usuarioSalvo = localStorage.getItem("usuario");
+  const token = localStorage.getItem("token");
 
-  const usuario = usuarioSalvo
-    ? JSON.parse(usuarioSalvo)
-    : null;
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+
+  let usuario: any = null;
+
+  try {
+    const usuarioSalvo = localStorage.getItem("usuario");
+    usuario = usuarioSalvo ? JSON.parse(usuarioSalvo) : null;
+  } catch {
+    usuario = null;
+  }
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("usuario");
     navigate("/");
   };
 
@@ -41,6 +76,34 @@ export function DashboardLayout() {
              </Button>
           </div>
         </div>
+
+        <nav className="border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex gap-1 overflow-x-auto">
+              {menuItens.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === "/dashboard"}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                        isActive
+                          ? "text-blue-600 border-blue-600"
+                          : "text-gray-600 border-transparent hover:text-blue-600 hover:border-gray-300"
+                      }`
+                    }
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />

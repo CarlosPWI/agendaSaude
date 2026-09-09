@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  useNavigate,
-  useParams,
-} from "react-router";
+import { useNavigate, useParams } from "react-router";
+
+import { format } from "date-fns";
 
 import { toast } from "sonner";
+
+import { HORARIOS_DISPONIVEIS } from "../constants/horarios";
+
+import { handleUnauthorized } from "../services/session";
+import { apiFetch } from "../services/apiClient";
 
 export function ReschedulePage() {
   const navigate = useNavigate();
@@ -59,7 +63,7 @@ export function ReschedulePage() {
       const token =
         localStorage.getItem("token");
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/pacientes`,
         {
           headers: {
@@ -70,6 +74,8 @@ export function ReschedulePage() {
 
       const data =
         await response.json();
+
+      handleUnauthorized(response.status);
 
       setPacientes(
         data.data || data
@@ -88,7 +94,7 @@ export function ReschedulePage() {
       const token =
         localStorage.getItem("token");
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/statusagendamento`,
         {
           headers: {
@@ -99,6 +105,8 @@ export function ReschedulePage() {
 
       const data =
         await response.json();
+
+      handleUnauthorized(response.status);
 
       setStatusList(
         data.data || data
@@ -117,7 +125,7 @@ export function ReschedulePage() {
       const token =
         localStorage.getItem("token");
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/agendamentos/${id}`,
         {
           headers: {
@@ -129,6 +137,8 @@ export function ReschedulePage() {
       const data =
         await response.json();
 
+      handleUnauthorized(response.status);
+
       const agendamento =
         data.data || data;
 
@@ -137,19 +147,10 @@ export function ReschedulePage() {
       );
 
       const dataFormatada =
-        dataInicio
-          .toISOString()
-          .split("T")[0];
+        format(dataInicio, "yyyy-MM-dd");
 
       const horarioFormatado =
-        dataInicio.toLocaleTimeString(
-          "pt-BR",
-          {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          }
-        );
+        format(dataInicio, "HH:mm");
 
       setFormData({
         paciente_id:
@@ -176,18 +177,7 @@ export function ReschedulePage() {
     }
   }
 
-  const horarios = useMemo(() => {
-    return Array.from(
-      { length: 11 },
-      (_, index) => {
-        const hora = index + 8;
-
-        return `${hora
-          .toString()
-          .padStart(2, "0")}:00`;
-      }
-    );
-  }, []);
+  const horarios = HORARIOS_DISPONIVEIS;
 
   function formatarDataHoraComTimezone(
     data: string,
@@ -195,21 +185,6 @@ export function ReschedulePage() {
   ) {
     const dataHora = new Date(
       `${data}T${horario}:00`
-    );
-
-    return dataHora.toISOString();
-  }
-
-  function calcularDataHoraFim(
-    data: string,
-    horario: string
-  ) {
-    const dataHora = new Date(
-      `${data}T${horario}:00`
-    );
-
-    dataHora.setHours(
-      dataHora.getHours() + 1
     );
 
     return dataHora.toISOString();
@@ -287,12 +262,6 @@ export function ReschedulePage() {
           formData.horario
         );
 
-      const dataHoraFim =
-        calcularDataHoraFim(
-          formData.data,
-          formData.horario
-        );
-
       const payload = {
         usuario_id: usuarioId,
 
@@ -305,21 +274,12 @@ export function ReschedulePage() {
         data_hora_inicio:
           dataHoraInicio,
 
-        data_hora_fim:
-          dataHoraFim,
-
         observacoes:
           formData.observacoes?.trim() ||
           null,
       };
 
-      console.log(
-        "PAYLOAD REAGENDAMENTO:"
-      );
-
-      console.log(payload);
-
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/agendamentos/${id}`,
         {
           method: "PUT",
@@ -339,13 +299,9 @@ export function ReschedulePage() {
       const data =
         await response.json();
 
-      console.log(
-        "RESPONSE BACKEND:"
-      );
-
-      console.log(data);
-
       if (!response.ok) {
+      handleUnauthorized(response.status);
+
       const errorMessage =
         data.message ||
         data.detail?.[0]?.msg ||

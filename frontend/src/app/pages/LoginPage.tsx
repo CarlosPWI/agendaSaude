@@ -1,5 +1,7 @@
-import { useState, FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect, FormEvent } from "react";
+import { Link, useNavigate } from "react-router";
+
+import loginBg from "../../assets/login-bg.jpeg";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -8,7 +10,26 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
 
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("registerSuccess")) {
+      sessionStorage.removeItem("registerSuccess");
+
+      setSuccess(
+        "Conta criada com sucesso! Confirme seu e-mail antes de entrar."
+      );
+    }
+
+    if (sessionStorage.getItem("resetSuccess")) {
+      sessionStorage.removeItem("resetSuccess");
+
+      setSuccess(
+        "Senha alterada com sucesso! Faça login com a nova senha."
+      );
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -46,12 +67,26 @@ export function LoginPage() {
         );
       }
 
-      if (data.token) {
+      const token =
+        data.access_token || data.token;
+
+      if (token) {
         localStorage.setItem(
           "token",
-          data.token
+          token
         );
+        setSuccess("");
+      } else {
+        console.warn(
+          "TOKEN DE ACESSO NÃO RETORNADO NO LOGIN"
+        );
+      }
 
+      if (data.refresh_token) {
+        localStorage.setItem(
+          "refresh_token",
+          data.refresh_token
+        );
       }
 
       /*
@@ -59,8 +94,8 @@ export function LoginPage() {
       */
 
       const usuario =
-        data.usuario ||
         data.user ||
+        data.usuario ||
         data.data ||
         null;
 
@@ -94,6 +129,7 @@ export function LoginPage() {
 
   return (
     <div style={styles.container}>
+      <div style={styles.overlay} />
       <div style={styles.box}>
         <h1 style={styles.title}>
           Fazer login
@@ -139,6 +175,12 @@ export function LoginPage() {
             </p>
           )}
 
+          {success && (
+            <p style={styles.success}>
+              {success}
+            </p>
+          )}
+
           <div style={styles.actions}>
             <button
               type="submit"
@@ -151,6 +193,19 @@ export function LoginPage() {
             </button>
           </div>
         </form>
+
+        <p style={styles.footerText}>
+          <Link to="/forgot-password" style={styles.link}>
+            Esqueci minha senha
+          </Link>
+        </p>
+
+        <p style={styles.footerText}>
+          Não tem uma conta?{" "}
+          <Link to="/register" style={styles.link}>
+            Criar conta
+          </Link>
+        </p>
       </div>
     </div>
   );
@@ -158,21 +213,34 @@ export function LoginPage() {
 
 const styles = {
   container: {
+    position: "relative" as const,
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
     justifyContent: "center",
     minHeight: "100vh",
-    backgroundColor: "#f0f4f9",
+    backgroundImage: `url(${loginBg})`,
+    backgroundSize: "auto 100%",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    backgroundColor: "#0f172a",
     fontFamily: "Arial, sans-serif",
   },
 
+  overlay: {
+    position: "absolute" as const,
+    inset: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.55)",
+  },
+
   box: {
+    position: "relative" as const,
+    zIndex: 1,
     backgroundColor: "#fff",
     padding: "40px",
     borderRadius: "8px",
     boxShadow:
-      "0 1px 3px rgba(0,0,0,0.12)",
+      "0 4px 20px rgba(0,0,0,0.35)",
     width: "100%",
     maxWidth: "400px",
   },
@@ -213,6 +281,12 @@ const styles = {
     marginBottom: "16px",
   },
 
+  success: {
+    color: "#188038",
+    fontSize: "14px",
+    marginBottom: "16px",
+  },
+
   actions: {
     display: "flex",
     justifyContent: "flex-end",
@@ -227,5 +301,16 @@ const styles = {
     fontSize: "14px",
     fontWeight: "500",
     cursor: "pointer",
+  },
+
+  footerText: {
+    textAlign: "center" as const,
+    fontSize: "14px",
+    marginTop: "24px",
+  },
+
+  link: {
+    color: "#1a73e8",
+    textDecoration: "none",
   },
 };

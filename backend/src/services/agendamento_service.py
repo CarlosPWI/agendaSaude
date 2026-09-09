@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
+from src.repositories.agendamento_auditoria_repository import AgendamentoAuditoriaRepository
 from src.repositories.agendamento_repository import AgendamentoRepository
 from src.repositories.paciente_repository import PacienteRepository
 from src.repositories.statusagendamento_repository import StatusAgendamentoRepository
@@ -10,13 +11,15 @@ from src.schemas.agendamento_schema import (
     AgendamentoUpdate
 )
 
+from src.services.notificacao_service import NotificacaoService
+
 from src.exceptions.validation_exception import ValidationException
 
 
 class AgendamentoService:
 
     @staticmethod
-    def criar(data: AgendamentoCreate):
+    def criar(data: AgendamentoCreate, usuario_id: str | None = None):
 
         AgendamentoService._validar_chaves_estrangeiras(data)
 
@@ -40,11 +43,53 @@ class AgendamentoService:
             inicio + timedelta(hours=1)
         )
 
-        return AgendamentoRepository.criar(payload)
+        agendamento = AgendamentoRepository.criar(payload)
+
+        AgendamentoService._registrar_auditoria(
+            agendamento,
+            usuario_id,
+            "criado",
+            payload
+        )
+
+        AgendamentoService._notificar_paciente(
+            data,
+            agendamento,
+            inicio
+        )
+
+        return agendamento
 
     @staticmethod
-    def listar():
-        return AgendamentoRepository.listar()
+    def _notificar_paciente(data, agendamento, inicio):
+        """Envia a confirmação ao paciente (não interrompe o fluxo)."""
+        try:
+            if not agendamento:
+                return
+
+            paciente = PacienteRepository.buscar_por_id(
+                data.paciente_id
+            ) or {}
+
+            if not paciente.get("email"):
+                return
+
+            agendamento_id = agendamento.get(
+                "agendamento_id"
+            ) or data.paciente_id
+
+            NotificacaoService.confirmar_agendamento(
+                paciente_email=paciente["email"],
+                paciente_nome=paciente.get("nome") or "",
+                agendamento_id=agendamento_id,
+                data_hora_inicio=inicio,
+            )
+        except Exception as e:
+            print(f"[Notificacao] Falha ao notificar paciente: {e}")
+
+    @staticmethod
+    def listar(limit: int = 100, offset: int = 0):
+        return AgendamentoRepository.listar(limit=limit, offset=offset)
 
     @staticmethod
     def buscar_por_id(id: int):
@@ -60,7 +105,11 @@ class AgendamentoService:
         return agendamento
 
     @staticmethod
-    def atualizar(id: int, dados: AgendamentoUpdate):
+    def atualizar(
+        id: int,
+        dados: AgendamentoUpdate,
+        usuario_id: str | None = None
+    ):
 
         agendamento_atual = (
             AgendamentoService._buscar_ou_erro(id)
@@ -126,17 +175,84 @@ class AgendamentoService:
                     + timedelta(hours=1)
                 )
 
-        return AgendamentoRepository.atualizar(
+        agendamento = AgendamentoRepository.atualizar(
             id,
             payload
         )
 
+        AgendamentoService._registrar_auditoria(
+            agendamento or {"agendamento_id": id},
+            usuario_id,
+            "atualizado",
+            payload
+        )
+
+        return agendamento
+
     @staticmethod
-    def deletar(id: int):
+    def deletar(id: int, usuario_id: str | None = None):
 
         AgendamentoService._buscar_ou_erro(id)
 
-        return AgendamentoRepository.deletar(id)
+        agendamento = AgendamentoRepository.cancelar(id)
+
+        AgendamentoService._registrar_auditoria(
+            agendamento or {"agendamento_id": id},
+            usuario_id,
+            "cancelado",
+            None
+        )
+
+        return agendamento
+
+    @staticmethod
+    def listar_auditoria(id: int):
+
+        AgendamentoService._buscar_ou_erro(id)
+
+        registros = AgendamentoAuditoriaRepository \
+            .listar_por_agendamento(id)
+
+        ids = {
+            r["usuario_id"]
+            for r in registros
+            if r.get("usuario_id")
+        }
+
+        usuarios = UsuarioRepository.buscar_nomes(ids)
+
+        for r in registros:
+            info = usuarios.get(r.get("usuario_id")) or {}
+            r["usuario_nome"] = info.get("nome")
+            r["usuario_email"] = info.get("email")
+
+        return registros
+
+    @staticmethod
+    def _registrar_auditoria(
+        agendamento,
+        usuario_id: str | None,
+        acao: str,
+        dados: dict | None
+    ):
+        """Registra a trilha sem interromper o fluxo principal."""
+        try:
+            if not isinstance(agendamento, dict):
+                return
+
+            agendamento_id = agendamento.get("agendamento_id")
+
+            if agendamento_id is None:
+                return
+
+            AgendamentoAuditoriaRepository.registrar(
+                agendamento_id=agendamento_id,
+                usuario_id=usuario_id,
+                acao=acao,
+                dados=dados
+            )
+        except Exception as e:
+            print(f"[Auditoria] Falha ao registrar '{acao}': {e}")
 
     @staticmethod
     def _buscar_ou_erro(id: int):
@@ -163,15 +279,17 @@ class AgendamentoService:
 
             data = datetime.fromisoformat(data)
 
-        return data.replace(
-            tzinfo=None,
+        if data.tzinfo is None:
+            data = data.replace(tzinfo=timezone.utc)
+
+        return data.astimezone(timezone.utc).replace(
             microsecond=0
         )
 
     @staticmethod
     def _validar_horario(inicio: datetime):
 
-        agora = datetime.now().replace(
+        agora = datetime.now(timezone.utc).replace(
             microsecond=0
         )
 

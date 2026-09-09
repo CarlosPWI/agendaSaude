@@ -40,7 +40,7 @@ export function AttendanceStats({
       : "0";
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       <Card>
         <CardHeader>
           <CardTitle>Total</CardTitle>
@@ -73,6 +73,18 @@ export function AttendanceStats({
         <CardContent>
           <div className="text-2xl font-bold text-blue-600">
             {scheduled}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Cancelados</CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          <div className="text-2xl font-bold text-red-600">
+            {cancelled}
           </div>
         </CardContent>
       </Card>

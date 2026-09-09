@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
+
+import { format } from "date-fns";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -44,6 +46,14 @@ import {
 } from "../components/ui/alert-dialog";
 
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+
+import {
   Calendar,
   Plus,
   Search,
@@ -52,17 +62,21 @@ import {
   X,
   Edit,
   CheckCircle2,
+  History,
+  CalendarPlus,
+  UserMinus,
 } from "lucide-react";
 
 import { toast } from "sonner";
 
 import { AttendanceStats } from "../components/AttendanceStats";
 
-import { Agendamento } from "../types/agendamento";
+import { Agendamento, RegistroAuditoria } from "../types/agendamento";
 
 import {
   fetchAgendamentos,
   cancelAgendamento,
+  fetchAgendamentoAuditoria,
 } from "../services/agendamentoService";
 
 export function AppointmentsPage() {
@@ -85,6 +99,17 @@ export function AppointmentsPage() {
   const [appointmentToCancel, setAppointmentToCancel] = useState<
     string | null
   >(null);
+
+  const [auditDialogOpen, setAuditDialogOpen] = useState(false);
+
+  const [auditAppointment, setAuditAppointment] =
+    useState<Agendamento | null>(null);
+
+  const [auditRecords, setAuditRecords] = useState<
+    RegistroAuditoria[]
+  >([]);
+
+  const [auditLoading, setAuditLoading] = useState(false);
 
   async function loadAppointments() {
     try {
@@ -175,6 +200,55 @@ export function AppointmentsPage() {
       toast.error("Erro ao cancelar consulta");
     }
   }
+
+  async function openAudit(appointment: Agendamento) {
+    setAuditAppointment(appointment);
+    setAuditRecords([]);
+    setAuditDialogOpen(true);
+    setAuditLoading(true);
+
+    try {
+      const records = await fetchAgendamentoAuditoria(
+        appointment.id
+      );
+      setAuditRecords(records);
+    } catch {
+      toast.error("Erro ao carregar histórico do agendamento");
+    } finally {
+      setAuditLoading(false);
+    }
+  }
+
+  function formatDataHora(iso: string | undefined | null) {
+    if (!iso) return "";
+
+    const date = new Date(iso);
+
+    if (isNaN(date.getTime())) return "";
+
+    return format(date, "dd/MM/yyyy 'às' HH:mm");
+  }
+
+  const acaoInfo: Record<
+    RegistroAuditoria["acao"],
+    { label: string; icon: ReactNode; classe: string }
+  > = {
+    criado: {
+      label: "Criação",
+      icon: <CalendarPlus className="w-4 h-4" />,
+      classe: "bg-blue-100 text-blue-700",
+    },
+    atualizado: {
+      label: "Alteração",
+      icon: <Edit className="w-4 h-4" />,
+      classe: "bg-amber-100 text-amber-700",
+    },
+    cancelado: {
+      label: "Cancelamento",
+      icon: <UserMinus className="w-4 h-4" />,
+      classe: "bg-red-100 text-red-700",
+    },
+  };
 
   function clearFilters() {
     setSearchStartDate("");
@@ -417,6 +491,15 @@ export function AppointmentsPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        onClick={() => openAudit(appointment)}
+                      >
+                        <History className="w-4 h-4 mr-1" />
+                        Histórico
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() =>
                           navigate(
                             `/dashboard/reagendar/${appointment.id}`
@@ -461,11 +544,12 @@ export function AppointmentsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Confirmar cancelamento
+              Cancelar Consulta
             </AlertDialogTitle>
 
             <AlertDialogDescription>
               Deseja realmente cancelar esta consulta?
+              O registro será mantido no histórico com status "cancelado".
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -476,46 +560,6 @@ export function AppointmentsPage() {
 
             <AlertDialogAction
               onClick={confirmCancel}
-            >
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-
-      <AlertDialog open={concluirDialogOpen} onOpenChange={setConcluirDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Finalizar Consulta</AlertDialogTitle>
-            <AlertDialogDescription>
-              O paciente compareceu a esta consulta? Isso atualizará o painel de estatísticas.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex gap-2 sm:justify-end">
-            <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <Button variant="destructive" onClick={() => confirmConcluir(false)}>
-              Não, o paciente faltou
-            </Button>
-            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => confirmConcluir(true)}>
-              Sim, compareceu
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar Consulta</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja cancelar esta consulta? O registro será mantido no histórico, mas o status mudará para "cancelado".
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Não, manter</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmCancel}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Sim, cancelar
@@ -524,8 +568,90 @@ export function AppointmentsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <Dialog
+        open={auditDialogOpen}
+        onOpenChange={setAuditDialogOpen}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Histórico do agendamento
+            </DialogTitle>
 
+            <DialogDescription>
+              {auditAppointment
+                ? `Consulta #${auditAppointment.id} — ${auditAppointment.patientName}`
+                : "Trilha de alterações da consulta"}
+            </DialogDescription>
+          </DialogHeader>
 
+          <div className="max-h-[50vh] overflow-y-auto pr-1 space-y-3">
+            {auditLoading && (
+              <div className="text-center py-8 text-gray-500">
+                Carregando histórico...
+              </div>
+            )}
+
+            {!auditLoading && auditRecords.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                Nenhum registro encontrado
+              </div>
+            )}
+
+            {!auditLoading &&
+              auditRecords.map((record) => {
+                const info = acaoInfo[record.acao];
+
+                const horarioRegistrado =
+                  typeof record.dados?.data_hora_inicio === "string"
+                    ? formatDataHora(
+                        record.dados.data_hora_inicio
+                      )
+                    : "";
+
+                return (
+                  <div
+                    key={record.auditoria_id}
+                    className="flex items-start gap-3 p-3 border rounded-lg"
+                  >
+                    <div
+                      className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center ${info.classe}`}
+                    >
+                      {info.icon}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1">
+                        <span className="text-sm font-medium">
+                          {info.label}
+                        </span>
+
+                        <span className="text-xs text-gray-500">
+                          {formatDataHora(record.criado_em)}
+                        </span>
+                      </div>
+
+                      <div className="text-sm text-gray-600 mt-0.5 flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-gray-400" />
+
+                        {record.usuario_nome ||
+                          record.usuario_email ||
+                          "Usuário removido"}
+                      </div>
+
+                      {horarioRegistrado && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Horário registrado: {horarioRegistrado}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

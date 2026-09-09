@@ -2,11 +2,17 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from src.config.database import supabase
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials | None = Depends(security)
 ):
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token não informado"
+        )
+
     try:
         token = credentials.credentials
         response = supabase.auth.get_user(token)

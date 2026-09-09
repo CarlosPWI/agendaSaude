@@ -5,7 +5,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    field_validator,
     model_validator,
 )
 
@@ -91,27 +90,6 @@ class AgendamentoBase(BaseModel):
 # =========================
 
 class AgendamentoCreate(AgendamentoBase):
-
-    @field_validator("data_hora_inicio")
-    @classmethod
-    def validar_data_futura(
-        cls,
-        value: datetime
-    ):
-
-        agora = datetime.now(value.tzinfo)
-
-        if value <= agora:
-            raise ValueError(
-                "Não é permitido criar agendamento em horário passado"
-            )
-
-        if value.minute != 0 or value.second != 0:
-            raise ValueError(
-                "O agendamento deve iniciar em horário cheio"
-            )
-
-        return value
 
     @model_validator(mode="after")
     def definir_data_hora_fim(self):

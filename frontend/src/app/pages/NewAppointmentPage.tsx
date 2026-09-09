@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { HORARIOS_DISPONIVEIS } from "../constants/horarios";
+import { handleUnauthorized } from "../services/session";
+import { apiFetch } from "../services/apiClient";
 
 export function NewAppointmentPage() {
   const navigate = useNavigate();
@@ -55,7 +58,7 @@ export function NewAppointmentPage() {
       const token =
         localStorage.getItem("token");
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/pacientes/`,
         {
           method: "GET",
@@ -70,6 +73,8 @@ export function NewAppointmentPage() {
       );
 
       if (!response.ok) {
+        handleUnauthorized(response.status);
+
         const errorText =
           await response.text();
 
@@ -115,7 +120,7 @@ export function NewAppointmentPage() {
       const token =
         localStorage.getItem("token");
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/statusagendamento/`,
         {
           method: "GET",
@@ -130,6 +135,8 @@ export function NewAppointmentPage() {
       );
 
       if (!response.ok) {
+        handleUnauthorized(response.status);
+
         const errorText =
           await response.text();
 
@@ -162,18 +169,7 @@ export function NewAppointmentPage() {
     }
   }
 
-  const horarios = useMemo(() => {
-    return Array.from(
-      { length: 11 },
-      (_, index) => {
-        const hora = index + 8;
-
-        return `${hora
-          .toString()
-          .padStart(2, "0")}:00`;
-      }
-    );
-  }, []);
+  const horarios = HORARIOS_DISPONIVEIS;
 
   function formatarDataHoraComTimezone(
     data: string,
@@ -181,21 +177,6 @@ export function NewAppointmentPage() {
   ) {
     const dataHora = new Date(
       `${data}T${horario}:00`
-    );
-
-    return dataHora.toISOString();
-  }
-
-  function calcularDataHoraFim(
-    data: string,
-    horario: string
-  ) {
-    const dataHora = new Date(
-      `${data}T${horario}:00`
-    );
-
-    dataHora.setHours(
-      dataHora.getHours() + 1
     );
 
     return dataHora.toISOString();
@@ -290,18 +271,12 @@ export function NewAppointmentPage() {
             formData.horario
           ),
 
-        data_hora_fim:
-          calcularDataHoraFim(
-            formData.data,
-            formData.horario
-          ),
-
         observacoes:
           formData.observacoes.trim() ||
           null,
       };
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/agendamentos/`,
         {
           method: "POST",
@@ -323,6 +298,8 @@ export function NewAppointmentPage() {
         await response.json();
 
       if (!response.ok) {
+        handleUnauthorized(response.status);
+
         throw new Error(
           data.message ||
             data.detail?.[0]?.msg ||

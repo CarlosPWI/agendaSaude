@@ -6,6 +6,11 @@ import {
 
 import { toast } from "sonner";
 
+import { handleUnauthorized } from "../services/session";
+import { apiFetch } from "../services/apiClient";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function EditPatientPage() {
   const navigate = useNavigate();
 
@@ -38,6 +43,9 @@ export function EditPatientPage() {
       status: "ativo",
     });
 
+  const [emailError, setEmailError] =
+    useState("");
+
   useEffect(() => {
     carregarDados();
   }, [id]);
@@ -68,7 +76,7 @@ export function EditPatientPage() {
       const token =
         localStorage.getItem("token");
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/pacientes/${id}`,
         {
           method: "GET",
@@ -83,6 +91,8 @@ export function EditPatientPage() {
       );
 
       if (!response.ok) {
+        handleUnauthorized(response.status);
+
         const errorText =
           await response.text();
 
@@ -153,7 +163,7 @@ export function EditPatientPage() {
       const token =
         localStorage.getItem("token");
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/agentescomunitarios/`,
         {
           method: "GET",
@@ -168,6 +178,8 @@ export function EditPatientPage() {
       );
 
       if (!response.ok) {
+        handleUnauthorized(response.status);
+
         const errorText =
           await response.text();
 
@@ -250,6 +262,26 @@ export function EditPatientPage() {
         return;
       }
 
+      const email = formData.email.trim();
+
+      if (!email) {
+        setEmailError(
+          "O e-mail é obrigatório"
+        );
+
+        return;
+      }
+
+      if (!EMAIL_RE.test(email)) {
+        setEmailError(
+          "Informe um e-mail válido (ex.: nome@provedor.com)"
+        );
+
+        return;
+      }
+
+      setEmailError("");
+
       if (!apiUrl) {
         throw new Error(
           "VITE_API_URL não configurada"
@@ -311,7 +343,7 @@ export function EditPatientPage() {
         status: formData.status,
       };
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/pacientes/${id}`,
         {
           method: "PUT",
@@ -333,6 +365,8 @@ export function EditPatientPage() {
         await response.json();
 
       if (!response.ok) {
+        handleUnauthorized(response.status);
+
         throw new Error(
           data.message ||
             data.detail?.[0]?.msg ||
@@ -524,22 +558,34 @@ export function EditPatientPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                E-mail
+                E-mail <span className="text-red-500">*</span>
               </label>
 
               <input
                 type="email"
+                required
                 value={formData.email}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFormData((prev) => ({
                     ...prev,
-                    email:
-                      e.target.value,
-                  }))
-                }
-                className="w-full border rounded-md px-3 py-2"
+                    email: e.target.value,
+                  }));
+
+                  if (emailError) {
+                    setEmailError("");
+                  }
+                }}
+                className={`w-full border rounded-md px-3 py-2 ${
+                  emailError ? "border-red-500" : ""
+                }`}
                 placeholder="email@exemplo.com"
               />
+
+              {emailError && (
+                <p className="text-sm text-red-600">
+                  {emailError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

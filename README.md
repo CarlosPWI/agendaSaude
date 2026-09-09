@@ -1,232 +1,157 @@
-# 📅 Sistema de Agendamento Online
+# 📅 Sistema de Agendamento Online — agendaSaude
 
-## 📌 Descrição
+Sistema web de agendamento de atendimentos (Projeto Integrador — Ciência de Dados / Engenharia de Sistemas / TI).
 
-Este projeto consiste no desenvolvimento de um **Sistema Web de Agendamento Online**, criado como parte do Projeto Integrador do curso de Ciência de Dados / Engenharia de Sistemas / Bacharelado em Tecnologia da Informação.
+## 🚀 Stack
 
-A aplicação tem como objetivo permitir o gerenciamento eficiente de horários de atendimento de uma profissional da área de psicologia, possibilitando o cadastro de clientes, controle de agenda e organização dos atendimentos.
+| Camada | Tecnologia |
+|--------|-----------|
+| Backend | Python + FastAPI + Pydantic |
+| Banco | Supabase (PostgreSQL em nuvem) + Auth |
+| Frontend | React 18 + TypeScript + Vite + Tailwind (shadcn/ui) |
 
----
-
-## 🎯 Objetivos do Projeto
-
-* Desenvolver uma aplicação web utilizando **Python**
-* Implementar integração com **banco de dados em nuvem (Supabase)**
-* Aplicar conceitos de versionamento com Git e GitHub
-* Criar um sistema funcional de agendamento
-* Proporcionar melhor organização da agenda profissional
-
----
-
-## 🚀 Funcionalidades
-
-✔ Cadastro de usuários
-✔ Autenticação de login
-✔ Cadastro de pacientes
-✔ Cadastro de agentes comunitários
-✔ Cadastro de horários disponíveis
-✔ Agendamento de consultas
-✔ Listagem de agendamentos
-✔ Cancelamento de atendimentos
-✔ Persistência de dados em banco na nuvem
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-* **Python**
-* Flask
-* Pytest
-* Pydantic
-* **Supabase (PostgreSQL Cloud Database)**
-* HTML
-* CSS
-* JavaScript
-* Git / GitHub
-
----
-
-## 🗄️ Banco de Dados
-
-O sistema utiliza o **Supabase**, uma plataforma backend que fornece:
-
-* Banco de dados PostgreSQL em nuvem
-* API automática para acesso aos dados
-* Sistema de autenticação
-* Armazenamento seguro
-
----
-
-## 📂 Estrutura do Projeto
+## 📂 Estrutura
 
 ```
-agemdaSaude/
-│
-├── backend
-│   │
-│   ├── venv
-│   ├── main.py
+agendaSaude/
+├── backend/
 │   ├── requirements.txt
-│   ├── .env
-│   │
-│   ├── src
-│   │   ├── api
-│   │   │   ├── paciente_routes.py
-│   │   │   └── agendamento_routes.py
-│   │   │
-│   │   ├── controllers
-│   │   │   ├── paciente_controller.py
-│   │   │   └── agendamento_controller.py
-│   │   │
-│   │   ├── services
-│   │   │   ├── paciente_service.py
-│   │   │   └── agendamento_service.py
-│   │   │
-│   │   ├── repositories
-│   │   │   ├── paciente_repository.py
-│   │   │   └── agendamento_repository.py
-│   │   │
-│   │   ├── models
-│   │   │   ├── paciente.py
-│   │   │   └── agendamento.py
-│   │   │
-│   │   ├── dtos
-│   │   │   ├── paciente_dto.py
-│   │   │   └── agendamento_dto.py
-│   │   │
-│   │   ├── config
-│   │   │   └── database.py
-│   │   │
-│   │   ├── exceptions
-│   │   │   └── validation_exception.py
-│   │   │
-│   │   └── utils
-│   │       └── response.py
-│   │
-│   └── tests
-│       ├── conftest.py
-│       │
-│       ├── fakes
-│       │   ├── fake_paciente_repository.py
-│       │   └── fake_agendamento_repository.py
-│       │
-│       ├── services
-│       │   ├── test_paciente_service.py
-│       │   └── test_agendamento_service.py
-│       │
-│       ├── controllers
-│       │   └── test_paciente_controller.py
-│       │
-│       └── api
-│           └── test_paciente_api.py
-│
-├── frontend
-│   │
-│   ├── index.html
-│   ├── pacientes.html
-│   ├── agendamentos.html
-│   │
-│   ├── js
-│   │   ├── api.js
-│   │   ├── pacientes.js
-│   │   └── agendamentos.js
-│   │
-│   └── css
-│       └── style.css  (opcional)
-│
-├── README.md
-└── .gitignore
+│   ├── pytest.ini
+│   ├── src/
+│   │   ├── main.py                # app FastAPI + CORS + handler de erros
+│   │   ├── config/                # database (Supabase) + dependencies (auth)
+│   │   ├── controllers/           # rotas (FastAPI)
+│   │   ├── services/              # regras de negócio
+│   │   ├── repositories/          # acesso ao Supabase
+│   │   ├── schemas/               # Pydantic
+│   │   ├── exceptions/            # ValidationException
+│   │   └── utils/                 # response, validators, rate_limit
+│   ├── sql/                       # migrações (soft delete, timestamptz)
+│   └── tests/                     # pytest + fakes (sem rede)
+└── frontend/
+    └── src/app/
+        ├── pages/                 # Login, Planner, Consultas, Pacientes...
+        ├── services/              # agendamentoService (contrato da API)
+        ├── types/                 # Agendamento
+        ├── constants/             # horários disponíveis
+        └── components/            # layout + ui (shadcn)
 ```
 
----
+## ⚙️ Como executar
 
-## ⚙️ Como Executar o Projeto
+### Backend
 
-### ✅ Pré-requisitos
-
-* Python 3.10 ou superior
-* Conta no Supabase
-* Git instalado
-
-### ✅ Passos
-
-1. Clonar o repositório
-
-```
-git clone https://github.com/CarlosPWI/agendaSaude
-```
-
-2. Acessar a pasta
-
-```
-cd agendaSaude
-```
-
-3. Criar ambiente virtual
-
-```
-python -m venv venv
-```
-
-4. Ativar ambiente virtual
-
-Windows:
-
-```
-venv\Scripts\activate
-```
-
-Linux/Mac:
-
-```
-source venv/bin/activate
-```
-
-5. Instalar dependências
-
-```
-pip install --upgrade pip
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+pip install pytest                 # para rodar os testes
+
+# .env com as variáveis abaixo
+cp .env.example .env
+
+uvicorn src.main:app --reload
 ```
 
-6. Configurar variáveis do Supabase
-
-Criar arquivo `.env` contendo:
+Variáveis de ambiente (`backend/.env`):
 
 ```
-SUPABASE_URL= sua_url
-SUPABASE_KEY= sua_chave
+SUPABASE_URL=...
+SUPABASE_KEY=...
+# Necessária para o DELETE /usuarios/{id} remover a conta do Supabase Auth:
+SUPABASE_SERVICE_ROLE_KEY=...
+# Usada no link de recuperação de senha:
+FRONTEND_URL=http://localhost:5173
+# Opcional — origens permitidas no CORS (separadas por vírgula):
+CORS_ORIGINS=http://localhost:5173,https://agenda-saude-omega.vercel.app
+# Opcional — rate limit compartilhado entre instâncias (sem ela, usa memória):
+# REDIS_URL=redis://localhost:6379/0
 ```
 
-7. Executar aplicação
+### Frontend
 
+```bash
+cd frontend
+npm install          # ou pnpm install (pnpm-lock.yaml)
+echo "VITE_API_URL=http://localhost:8000" > .env.local
+npm run dev          # http://localhost:5173
+npm run build        # typecheck (tsc) + build de produção
 ```
-python main.py
+
+## 🧪 Testes
+
+```bash
+cd backend
+python -m pytest tests -q
 ```
 
----
+A suíte usa fakes e roda sem conexão com o Supabase (39 testes cobrindo auth, agendamento, paciente, usuário e rate limit).
 
-## 👨‍💻 Integrantes
+## 🚀 Produção
 
-* Carlos Alberto Cordeiro de Farias Junior
-* Carlos Henrique Souza
-* Luis Henrique Marinho Meira
-* Marcelo Paulino da Costa
-* Hodavias Santos Dantas Medeiros
-* Fabiano Santos Silva
-* Dimitri Souza e Souza
-* Luci Tieko Ito
+Arquitetura: **frontend na Vercel** (`agenda-saude-omega.vercel.app`) + **backend FastAPI num host (Render/Railway/Fly.io)** + **Supabase** como banco/auth.
 
----
+### Backend (Render / Railway / Fly.io)
 
-## 📅 Status do Projeto
+1. Crie o serviço apontando para `backend/` (Python 3.12+, comando: `uvicorn src.main:app --host 0.0.0.0 --port $PORT`).
+2. Defina as variáveis de ambiente **reais** (referência em `backend/.env.production.example`):
+   - `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+   - `FRONTEND_URL=https://agenda-saude-omega.vercel.app`
+   - `CORS_ORIGINS=https://agenda-saude-omega.vercel.app` (sem localhost)
+3. Garanta que as migrações foram aplicadas (SQL Editor do Supabase):
+   - `sql/migracao_soft_delete.sql` e `sql/migracao_auditoria.sql`.
 
-🚧 Em desenvolvimento acadêmico
+### Frontend (Vercel)
 
----
+1. Importe a pasta `frontend/` na Vercel (framework Vite, build `npm run build`, output `dist`).
+2. O arquivo `vercel.json` já cobre as rotas do SPA (refresh/direct link em `/dashboard/consultas`, etc.).
+3. No dashboard da Vercel, defina a variável de ambiente:
+   - `VITE_API_URL` = URL pública do backend (ex.: `https://api-agendasaude.onrender.com`)
+4. **Nunca** exponha `SUPABASE_SERVICE_ROLE_KEY` no frontend.
+
+### Supabase (produção)
+
+- Em **Authentication → URL Configuration**: `Site URL` = `https://agenda-saude-omega.vercel.app` e mantenha `http://localhost:5173/reset-password` + a URL de produção em **Redirect URLs**.
+- Para e-mail real de recuperação, configure **SMTP** (Authentication → SMTP) ou confie no provedor padrão.
+
+### Checklist de verificação
+
+1. `curl https://<seu-backend>/health` → `{"status":"healthy"}`
+2. Acessar `https://agenda-saude-omega.vercel.app` → fazer login → navegar (menu Planner/Consultas/Pacientes/Agentes).
+3. Testar "Esqueci minha senha" e "Histórico" de um agendamento.
+
+## 🗄️ Banco de dados (Supabase)
+
+1. Crie o projeto no Supabase e configure as credenciais no `.env`.
+2. Tabelas: `usuarios`, `tiposusuarios`, `agentescomunitarios`, `pacientes`, `statusagendamento`, `agendamentos`, `agendamentos_auditoria`.
+3. Autenticação: os usuários são criados no **Supabase Auth**; a tabela `usuarios` guarda o perfil (a coluna `usuario_id` é o `auth.uid()`).
+4. Execute as migrações (SQL Editor do Supabase):
+   - `backend/sql/migracao_soft_delete.sql` (adiciona `cancelado`, converte horários para `timestamptz`);
+   - `backend/sql/migracao_auditoria.sql` (trilha de quem criou/alterou/cancelou agendamentos).
+5. Verifique se está tudo aplicado: `cd backend && venv/bin/python scripts/verificar_migracoes.py`
+
+> **Importante:** os horários são tratados em UTC de ponta a ponta. As colunas `data_hora_inicio` e `data_hora_fim` de `agendamentos` devem ser `timestamptz`.
+
+### Recuperação de senha (configuração no Supabase)
+
+No dashboard do Supabase, em **Authentication → URL Configuration**, adicione
+`http://localhost:5173/reset-password` (e o equivalente de produção) em
+**Redirect URLs**. O link do e-mail aponta para `FRONTEND_URL/reset-password`.
+
+## 🔐 Segurança (implementado)
+
+- Todas as rotas de dados exigem `Bearer token` (Supabase Auth).
+- `/auth/login` e `/auth/register` têm rate limit (5 tentativas/min por IP; em Redis quando `REDIS_URL` está configurada).
+- Cadastro de usuários pela tela `/register` (lista os tipos de usuário via `GET /tiposusuarios/`, rota pública read-only); login exige e-mail confirmado no Supabase.
+- Recuperação de senha: `/auth/forgot-password` (e-mail com link) e `/auth/reset-password`; frontend em `/forgot-password` e `/reset-password`.
+- Sessão renovada automaticamente pelo frontend via `/auth/refresh` quando o JWT expira.
+- Exclusão de conta remove a linha de `usuarios` **e** a conta no Supabase Auth (requer `SUPABASE_SERVICE_ROLE_KEY`).
+- Erros padronizados via handler global (`{success, message, errors}`).
+- CORS configurável por variável de ambiente.
+- Soft delete de agendamentos (cancelamento mantém histórico e libera o horário).
+- Trilha de auditoria: toda criação, alteração e cancelamento de agendamento registra quem fez e quando (`GET /agendamentos/{id}/auditoria`).
 
 ## 📄 Licença
 
-Projeto desenvolvido para fins educacionais, sem fins comerciais.
-# agendaSaude
-Agenda Web para marcação de consultas
+Projeto acadêmico, sem fins comerciais.

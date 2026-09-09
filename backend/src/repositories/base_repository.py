@@ -1,7 +1,14 @@
 import json
+from datetime import date, datetime
 
-from src.config.database import supabase
+from src.config.database import db
 from src.services.base_service import now
+
+
+def _serializer(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return str(value)
 
 
 class BaseRepository:
@@ -18,31 +25,38 @@ class BaseRepository:
         )
 
         response = (
-            supabase
+            db
             .table(cls.table)
             .insert(payload)
             .execute()
         )
 
-        return response.data[0] if response and response.data[0] else None
+        return response.data[0] if response.data else None
 
     @classmethod
-    def listar(cls):
+    def listar(
+        cls,
+        limit: int | None = None,
+        offset: int | None = None,
+    ):
 
-        response = (
-            supabase
-            .table(cls.table)
-            .select("*")
-            .execute()
-        )
+        query = db.table(cls.table).select("*")
 
-        return response.data if response and response.data else None
+        if limit is not None:
+            query = query.limit(limit)
+
+        if offset is not None:
+            query = query.offset(offset)
+
+        response = query.execute()
+
+        return response.data if response.data else None
 
     @classmethod
     def buscar_por_id(cls, value):
 
         response = (
-            supabase
+            db
             .table(cls.table)
             .select("*")
             .eq(cls.id_field, value)
@@ -50,6 +64,16 @@ class BaseRepository:
             .execute()
         )
 
+        return cls._extrair_data(response)
+
+    @staticmethod
+    def _extrair_data(response):
+        """Retorna os dados de uma resposta PostgREST de forma segura.
+
+        Em consultas com `.maybe_single()`, o cliente supabase-py pode
+        retornar `None` quando não há registro — antes isso gerava
+        AttributeError (HTTP 500) em vez de "não encontrado".
+        """
         return response.data if response and response.data else None
 
     @classmethod
@@ -63,27 +87,27 @@ class BaseRepository:
         payload["atualizado_em"] = now()
 
         response = (
-            supabase
+            db
             .table(cls.table)
             .update(payload)
             .eq(cls.id_field, value)
             .execute()
         )
 
-        return response.data[0] if response and response.data[0] else None
+        return response.data[0] if response.data else None
 
     @classmethod
     def deletar(cls, value):
 
         response = (
-            supabase
+            db
             .table(cls.table)
             .delete()
             .eq(cls.id_field, value)
             .execute()
         )
 
-        return response.data[0] if response and response.data[0] else None
+        return response.data[0] if response.data else None
 
     @staticmethod
     def _to_dict(data, exclude=None):
@@ -109,4 +133,6 @@ class BaseRepository:
         else:
             raise TypeError("Formato inválido")
 
-        return json.loads(json.dumps(payload, default=str))
+        return json.loads(
+            json.dumps(payload, default=_serializer)
+        )

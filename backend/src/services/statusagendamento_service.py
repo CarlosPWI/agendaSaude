@@ -11,8 +11,8 @@ class StatusAgendamentoService:
         return StatusAgendamentoRepository.criar(data)
 
     @staticmethod
-    def listar():
-        return StatusAgendamentoRepository.listar()
+    def listar(limit: int = 100, offset: int = 0):
+        return StatusAgendamentoRepository.listar(limit=limit, offset=offset)
 
     @staticmethod
     def buscar_por_id(id: int):

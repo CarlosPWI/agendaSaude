@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from src.repositories.agendamento_auditoria_repository import AgendamentoAuditoriaRepository
 from src.repositories.agendamento_repository import AgendamentoRepository
+from src.repositories.ocupacao_repository import OcupacaoRepository
 from src.repositories.paciente_repository import PacienteRepository
 from src.repositories.statusagendamento_repository import StatusAgendamentoRepository
 from src.repositories.usuario_repository import UsuarioRepository
@@ -40,7 +41,7 @@ class AgendamentoService:
         payload["data_hora_inicio"] = inicio
 
         payload["data_hora_fim"] = (
-            inicio + timedelta(hours=1)
+            inicio + timedelta(minutes=30)
         )
 
         agendamento = AgendamentoRepository.criar(payload)
@@ -172,7 +173,7 @@ class AgendamentoService:
 
                 payload["data_hora_fim"] = (
                     novo_inicio_normalizado
-                    + timedelta(hours=1)
+                    + timedelta(minutes=30)
                 )
 
         agendamento = AgendamentoRepository.atualizar(
@@ -299,14 +300,14 @@ class AgendamentoService:
                 "Não é permitido agendamento em horário passado"
             )
 
-        # Apenas horários cheios
+        # Aceita horários cheios e meia hora (:00 ou :30)
         if (
-            inicio.minute != 0
+            inicio.minute not in (0, 30)
             or
             inicio.second != 0
         ):
             raise ValidationException(
-                "O agendamento deve iniciar em horário cheio"
+                "O agendamento deve iniciar em horário cheio ou meia hora"
             )
 
     @staticmethod
@@ -316,7 +317,7 @@ class AgendamentoService:
     ):
 
         data_fim = (
-            data_inicio + timedelta(hours=1)
+            data_inicio + timedelta(minutes=30)
         )
 
         conflitos = (
@@ -340,6 +341,18 @@ class AgendamentoService:
                 raise ValidationException(
                     "Já existe um agendamento nesse horário"
                 )
+
+        # Não permite agendar em horário com reunião/grupo/bloqueio
+        ocupacoes = OcupacaoRepository.buscar_conflitos(
+            data_inicio,
+            data_fim
+        )
+
+        if ocupacoes:
+            raise ValidationException(
+                "Horário ocupado por reunião/grupo/bloqueio. Libere a ocupação primeiro.",
+                409
+            )
 
     @staticmethod
     def _validar_chaves_estrangeiras(data):

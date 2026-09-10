@@ -85,19 +85,19 @@ export function DashboardLayout() {
       <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3" data-guia="cabecalho">
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Agenda Saúde
+                  </h1>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Olá, {usuario?.nome || "Usuário"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Agenda Saúde
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Olá, {usuario?.nome || "Usuário"}
-                </p>
-              </div>
-            </div>
 
             <div className="flex items-center gap-2">
               {/* Botões extras só quando habilitados */}
@@ -141,7 +141,7 @@ export function DashboardLayout() {
                 <Settings className="w-4 h-4" />
               </Button>
 
-              <Button variant="ghost" onClick={handleLogout} className="flex items-center gap-2">
+              <Button variant="ghost" onClick={handleLogout} className="flex items-center gap-2" data-guia="sair">
                 <LogOut className="w-4 h-4" />
                 Sair
               </Button>
@@ -160,6 +160,9 @@ export function DashboardLayout() {
                     key={item.to}
                     to={item.to}
                     end={item.to === "/dashboard"}
+                    data-guia={`menu-${item.label
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")}`}
                     className={({ isActive }) =>
                       `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                         isActive

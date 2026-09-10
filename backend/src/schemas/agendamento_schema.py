@@ -94,9 +94,9 @@ class AgendamentoCreate(AgendamentoBase):
     @model_validator(mode="after")
     def definir_data_hora_fim(self):
 
-        # duração fixa de 1 hora
+        # duração fixa de 30 minutos
         self.data_hora_fim = (
-            self.data_hora_inicio + timedelta(hours=1)
+            self.data_hora_inicio + timedelta(minutes=30)
         )
 
         return self

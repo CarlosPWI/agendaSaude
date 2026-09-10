@@ -18,8 +18,18 @@ import { handleUnauthorized } from "../services/session";
 import { fetchAgendamentos } from "../services/agendamentoService";
 
 import { HORARIOS_DISPONIVEIS } from "../constants/horarios";
+import { feriadoNa } from "../constants/feriados";
 
 import { Button } from "../components/ui/button";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 
 import {
   Card,
@@ -36,6 +46,15 @@ import {
 } from "../components/ui/tabs";
 
 import { apiFetch } from "../services/apiClient";
+
+import {
+  fetchOcupacoes,
+  criarOcupacao,
+  removerOcupacao,
+  OcupacaoSlot,
+  TipoOcupacao,
+  tituloPadrao,
+} from "../services/ocupacaoService";
 
 interface Agendamento {
   id: string;
@@ -67,6 +86,29 @@ export function PlannerPage() {
   const [agendamentos, setAgendamentos] =
     useState<Agendamento[]>([]);
 
+  const [ocupacoes, setOcupacoes] = useState<
+    OcupacaoSlot[]
+  >([]);
+
+  const [loadingOcupacao, setLoadingOcupacao] =
+    useState<string | null>(null);
+
+  const [ocuparDialog, setOcuparDialog] = useState<{
+    aberto: boolean;
+    data: string;
+    horario: string;
+    tipo: TipoOcupacao;
+    titulo: string;
+    observacoes: string;
+  }>({
+    aberto: false,
+    data: "",
+    horario: "",
+    tipo: "bloqueio",
+    titulo: "",
+    observacoes: "",
+  });
+
   const [statusList, setStatusList] =
     useState<any[]>([]);
 
@@ -84,7 +126,121 @@ export function PlannerPage() {
     await Promise.all([
       carregarAgendamentos(),
       fetchStatusAgendamento(),
+      carregarOcupacoes(),
     ]);
+  }
+
+  async function carregarOcupacoes() {
+    try {
+      const lista = await fetchOcupacoes();
+      setOcupacoes(lista);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  // Ocupa um horário livre (reunião/grupo/bloqueio)
+  async function ocuparSlot(
+    data: string,
+    horario: string,
+    tipo: TipoOcupacao
+  ) {
+    const dataHoraInicio = `${data}T${horario}:00`;
+
+    try {
+      setLoadingOcupacao(`${data}-${horario}`);
+
+      await criarOcupacao({
+        data_hora_inicio: dataHoraInicio,
+        tipo,
+      });
+
+      toast.success(
+        tipo === "reuniao"
+          ? "Reunião marcada"
+          : tipo === "grupo"
+          ? "Grupo de atendimento criado"
+          : "Horário bloqueado"
+      );
+
+      await carregarOcupacoes();
+    } catch (error: any) {
+      toast.error(
+        error.message ||
+          "Erro ao ocupar o horário"
+      );
+    } finally {
+      setLoadingOcupacao(null);
+    }
+  }
+
+  // Libera um horário ocupado
+  async function liberarSlot(ocupacao: OcupacaoSlot) {
+    try {
+      setLoadingOcupacao(ocupacao.id);
+
+      await removerOcupacao(ocupacao.id);
+
+      toast.success("Horário liberado");
+
+      await carregarOcupacoes();
+    } catch (error: any) {
+      toast.error(
+        error.message ||
+          "Erro ao liberar o horário"
+      );
+    } finally {
+      setLoadingOcupacao(null);
+    }
+  }
+
+  // Abre o popup de configuração da ocupação (estilo Google Agenda)
+  function abrirOcupar(
+    data: string,
+    horario: string,
+    tipo: TipoOcupacao
+  ) {
+    setOcuparDialog({
+      aberto: true,
+      data,
+      horario,
+      tipo,
+      titulo: tituloPadrao(tipo),
+      observacoes: "",
+    });
+  }
+
+  // Confirma a ocupação com os dados preenchidos no popup
+  async function confirmarOcupar() {
+    const { data, horario, tipo, titulo, observacoes } =
+      ocuparDialog;
+
+    try {
+      setLoadingOcupacao(`${data}-${horario}`);
+
+      await criarOcupacao({
+        data_hora_inicio: `${data}T${horario}:00`,
+        tipo,
+        titulo: titulo.trim() || tituloPadrao(tipo),
+        observacoes,
+      });
+
+      toast.success("Ocupação salva");
+
+      setOcuparDialog((d) => ({
+        ...d,
+        aberto: false,
+      }));
+
+      await carregarOcupacoes();
+    } catch (error: any) {
+      toast.error(
+        error.message ||
+          "Erro ao salvar a ocupação"
+      );
+    } finally {
+      setLoadingOcupacao(null);
+    }
   }
 
   async function fetchStatusAgendamento() {
@@ -262,6 +418,29 @@ export function PlannerPage() {
         time
     );
   }
+
+  function getOcupacaoByDateAndTime(
+    data: string,
+    time: string
+  ) {
+    return ocupacoes.find(
+      (o) =>
+        o.data === data &&
+        o.horario === time
+    );
+  }
+
+  const estiloOcupacao: Record<
+    TipoOcupacao,
+    string
+  > = {
+    reuniao:
+      "bg-yellow-50 border-l-4 border-yellow-500",
+    grupo:
+      "bg-blue-50 border-l-4 border-blue-500",
+    bloqueio:
+      "bg-slate-100 border-l-4 border-slate-400",
+  };
 
   function handleEditAppointment(
     id: string
@@ -501,6 +680,12 @@ export function PlannerPage() {
                   }
                 )}
               </span>
+
+              {feriadoNa(selectedDate) && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-700 px-2.5 py-0.5 text-xs font-semibold">
+                  🎌 {feriadoNa(selectedDate)?.nome}
+                </span>
+              )}
             </div>
           </div>
         </CardContent>
@@ -629,11 +814,114 @@ export function PlannerPage() {
                             </div>
                           </div>
                         </div>
-                      ) : (
-                        <div className="flex-1 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-                          Horário livre
-                        </div>
-                      )}
+                      ) : (() => {
+                        const dataDoDia = format(
+                          selectedDate,
+                          "yyyy-MM-dd"
+                        );
+
+                        const ocupacao =
+                          getOcupacaoByDateAndTime(
+                            dataDoDia,
+                            slot
+                          );
+
+                        if (ocupacao) {
+                          return (
+                            <div
+                              className={`flex-1 rounded-lg border p-3 ${estiloOcupacao[ocupacao.tipo]}`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="font-semibold text-slate-700 dark:text-slate-200">
+                                    {ocupacao.titulo}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    {ocupacao.tipo === "reuniao"
+                                      ? "Reunião"
+                                      : ocupacao.tipo === "grupo"
+                                      ? "Grupo de Atendimento"
+                                      : "Bloqueado"}
+                                  </p>
+                                  {ocupacao.observacoes && (
+                                    <p
+                                      className="text-xs italic text-slate-500 mt-1 line-clamp-2"
+                                      title={ocupacao.observacoes}
+                                    >
+                                      {ocupacao.observacoes}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={
+                                    loadingOcupacao ===
+                                    ocupacao.id
+                                  }
+                                  onClick={() =>
+                                    liberarSlot(
+                                      ocupacao
+                                    )
+                                  }
+                                  title="Liberar horário"
+                                >
+                                  🔓 Liberar
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="flex-1 rounded-lg border border-dashed p-2 text-sm text-muted-foreground flex items-center justify-between gap-2">
+                            <span>Horário livre</span>
+
+                            <div className="flex gap-1">
+                              <button
+                                className="px-1.5 py-0.5 rounded text-[9px] bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                title="Configurar reunião"
+                                onClick={() =>
+                                  abrirOcupar(
+                                    dataDoDia,
+                                    slot,
+                                    "reuniao"
+                                  )
+                                }
+                              >
+                                📅 Reunião
+                              </button>
+                              <button
+                                className="px-1.5 py-0.5 rounded text-[9px] bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                title="Configurar grupo"
+                                onClick={() =>
+                                  abrirOcupar(
+                                    dataDoDia,
+                                    slot,
+                                    "grupo"
+                                  )
+                                }
+                              >
+                                👥 Grupo
+                              </button>
+                              <button
+                                className="px-1.5 py-0.5 rounded text-[9px] bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                title="Bloquear horário"
+                                onClick={() =>
+                                  abrirOcupar(
+                                    dataDoDia,
+                                    slot,
+                                    "bloqueio"
+                                  )
+                                }
+                              >
+                                🔒 Bloquear
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
@@ -658,6 +946,11 @@ export function PlannerPage() {
                           locale:
                             ptBR,
                         }
+                      )}
+                      {feriadoNa(day.date) && (
+                        <span title={feriadoNa(day.date)?.nome}>
+                          {" "}🎌
+                        </span>
                       )}
                     </CardTitle>
                   </CardHeader>
@@ -776,6 +1069,114 @@ export function PlannerPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Popup de configuração da ocupação (estilo Google Agenda) */}
+      <Dialog
+        open={ocuparDialog.aberto}
+        onOpenChange={(aberto) =>
+          setOcuparDialog((d) => ({ ...d, aberto }))
+        }
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Ocupar horário</DialogTitle>
+            <DialogDescription>
+              {ocuparDialog.data && ocuparDialog.horario
+                ? `Configurar ${format(
+                    new Date(
+                      `${ocuparDialog.data}T${ocuparDialog.horario}:00`
+                    ),
+                    "dd/MM/yyyy 'às' HH:mm"
+                  )}`
+                : "Configure os detalhes"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Tipo
+              </label>
+              <select
+                value={ocuparDialog.tipo}
+                onChange={(e) =>
+                  setOcuparDialog((d) => ({
+                    ...d,
+                    tipo: e.target.value as TipoOcupacao,
+                  }))
+                }
+                className="w-full border rounded-md px-3 py-2 dark:bg-slate-900"
+              >
+                <option value="reuniao">📅 Reunião de Equipe</option>
+                <option value="grupo">👥 Grupo de Atendimento</option>
+                <option value="bloqueio">🔒 Horário Bloqueado</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Título
+              </label>
+              <input
+                type="text"
+                value={ocuparDialog.titulo}
+                onChange={(e) =>
+                  setOcuparDialog((d) => ({
+                    ...d,
+                    titulo: e.target.value,
+                  }))
+                }
+                placeholder="Ex.: Reunião de equipe"
+                className="w-full border rounded-md px-3 py-2 dark:bg-slate-900"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Observações
+              </label>
+              <textarea
+                rows={4}
+                value={ocuparDialog.observacoes}
+                onChange={(e) =>
+                  setOcuparDialog((d) => ({
+                    ...d,
+                    observacoes: e.target.value,
+                  }))
+                }
+                placeholder="Descreva detalhes do evento (pauta, participantes, justificativa do bloqueio...)"
+                className="w-full border rounded-md px-3 py-2 dark:bg-slate-900 resize-none"
+              />
+              <p className="text-xs text-slate-400">
+                Duração de 30 minutos (slot).
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setOcuparDialog((d) => ({ ...d, aberto: false }))
+              }
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmarOcupar}
+              disabled={
+                loadingOcupacao ===
+                `${ocuparDialog.data}-${ocuparDialog.horario}`
+              }
+            >
+              {loadingOcupacao ===
+              `${ocuparDialog.data}-${ocuparDialog.horario}`
+                ? "Salvando..."
+                : "Salvar ocupação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

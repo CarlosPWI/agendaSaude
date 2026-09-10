@@ -41,6 +41,7 @@ import {
   DIAS_SEMANA,
 } from "../services/upVisualData";
 import { OcupacaoCalendar } from "../components/upvisual/OcupacaoCalendar";
+import { PerdaPrimariaPainel } from "../components/perdaprimaria/PerdaPrimariaPainel";
 
 const CORES_PIE = ["#10b981", "#6366f1", "#f59e0b", "#ec4899", "#0ea5e9"];
 const COR_EMERALD = "#10b981";
@@ -245,6 +246,9 @@ export function UpVisualPage() {
           </button>
         )}
       </div>
+
+      {/* Perda Primária — dados reais */}
+      <PerdaPrimariaPainel />
 
       {/* Bento grid */}
       <div className="grid grid-cols-12 gap-4">

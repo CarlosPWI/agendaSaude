@@ -8,6 +8,7 @@ from src.services.notificacao_service import NotificacaoService
 from src.exceptions.validation_exception import ValidationException
 from src.repositories.agendamento_auditoria_repository import AgendamentoAuditoriaRepository
 from src.repositories.agendamento_repository import AgendamentoRepository
+from src.repositories.ocupacao_repository import OcupacaoRepository
 from src.repositories.paciente_repository import PacienteRepository
 from src.repositories.statusagendamento_repository import StatusAgendamentoRepository
 from src.repositories.usuario_repository import UsuarioRepository
@@ -40,6 +41,9 @@ def stub_repos(monkeypatch, conflitos=None):
         AgendamentoRepository, "buscar_conflitos", lambda i, f: resposta(conflitos or [])
     )
     monkeypatch.setattr(
+        OcupacaoRepository, "buscar_conflitos", lambda i, f: []
+    )
+    monkeypatch.setattr(
         UsuarioRepository, "buscar_por_id", lambda v: {"usuario_id": v}
     )
     monkeypatch.setattr(
@@ -69,11 +73,33 @@ def test_criar_horario_quebrado(monkeypatch):
     stub_repos(monkeypatch)
 
     data = make_create(
-        inicio=datetime.now(timezone.utc).replace(second=0, microsecond=0) + timedelta(minutes=30, hours=1)
+        inicio=datetime.now(timezone.utc).replace(second=0, microsecond=0) + timedelta(minutes=15, hours=1)
     )
 
     with pytest.raises(ValidationException):
         AgendamentoService.criar(data)
+
+
+def test_criar_meia_hora_aceita(monkeypatch):
+    stub_repos(monkeypatch)
+
+    salvo = {}
+    monkeypatch.setattr(
+        AgendamentoRepository,
+        "criar",
+        lambda p: salvo.update(p) or {**p, "agendamento_id": 1},
+    )
+
+    inicio = (
+        datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        + timedelta(days=1, minutes=30)
+    )
+    data = make_create(inicio=inicio)
+
+    resultado = AgendamentoService.criar(data)
+
+    assert resultado["agendamento_id"] == 1
+    assert salvo["data_hora_fim"] == salvo["data_hora_inicio"] + timedelta(minutes=30)
 
 
 def test_criar_conflito(monkeypatch):
@@ -88,6 +114,23 @@ def test_criar_conflito(monkeypatch):
         AgendamentoService.criar(data)
 
 
+def test_criar_bloqueado_por_ocupacao(monkeypatch):
+    stub_repos(monkeypatch)
+
+    monkeypatch.setattr(
+        OcupacaoRepository,
+        "buscar_conflitos",
+        lambda i, f: [{"id": "x", "tipo": "reuniao"}],
+    )
+
+    data = make_create()
+
+    with pytest.raises(ValidationException) as exc:
+        AgendamentoService.criar(data)
+
+    assert exc.value.status_code == 409
+
+
 def test_criar_sucesso_calcula_fim(monkeypatch):
     stub_repos(monkeypatch)
 
@@ -98,7 +141,7 @@ def test_criar_sucesso_calcula_fim(monkeypatch):
     resultado = AgendamentoService.criar(make_create())
 
     assert resultado["data_hora_inicio"] == salvo["data_hora_inicio"]
-    assert salvo["data_hora_fim"] == salvo["data_hora_inicio"] + timedelta(hours=1)
+    assert salvo["data_hora_fim"] == salvo["data_hora_inicio"] + timedelta(minutes=30)
 
 
 def test_atualizar_ignora_proprio_id_no_conflito(monkeypatch):

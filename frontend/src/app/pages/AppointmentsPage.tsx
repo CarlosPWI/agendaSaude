@@ -49,6 +49,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
@@ -65,6 +66,8 @@ import {
   History,
   CalendarPlus,
   UserMinus,
+  UserPlus,
+  ShieldAlert,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -72,12 +75,20 @@ import { toast } from "sonner";
 import { AttendanceStats } from "../components/AttendanceStats";
 
 import { Agendamento, RegistroAuditoria } from "../types/agendamento";
+import {
+  calcularRisco,
+  rotuloRisco,
+  REGRAS_RISCO,
+} from "../utils/risco";
 
 import {
   fetchAgendamentos,
   cancelAgendamento,
   fetchAgendamentoAuditoria,
+  fetchAgendamentoById,
+  createAgendamento,
 } from "../services/agendamentoService";
+import { fetchPacientes } from "../services/pacienteService";
 
 export function AppointmentsPage() {
   const navigate = useNavigate();
@@ -110,6 +121,154 @@ export function AppointmentsPage() {
   >([]);
 
   const [auditLoading, setAuditLoading] = useState(false);
+
+  const [riscoDialogOpen, setRiscoDialogOpen] = useState(false);
+
+  const [contatados, setContatados] = useState<Set<string>>(
+    () =>
+      new Set(
+        JSON.parse(
+          localStorage.getItem("agenda_risco_contatados") || "[]"
+        )
+      )
+  );
+
+  function marcarContatado(patientId: string) {
+    setContatados((prev) => {
+      const novo = new Set(prev);
+      novo.add(patientId);
+      localStorage.setItem(
+        "agenda_risco_contatados",
+        JSON.stringify([...novo])
+      );
+      return novo;
+    });
+    toast.success("Marcado como contatado");
+  }
+
+  function desfazerContato(patientId: string) {
+    setContatados((prev) => {
+      const novo = new Set(prev);
+      novo.delete(patientId);
+      localStorage.setItem(
+        "agenda_risco_contatados",
+        JSON.stringify([...novo])
+      );
+      return novo;
+    });
+  }
+
+  const [encaixeDialog, setEncaixeDialog] = useState<{
+    aberto: boolean;
+    appointmentId: string | null;
+    dataHoraInicio: string;
+    usuarioId: string;
+    statusagendamentoId: number;
+    pacienteFaltou: string;
+    pacientes: { paciente_id: number; nome: string }[];
+    escolhido: number | null;
+    salvando: boolean;
+  }>({
+    aberto: false,
+    appointmentId: null,
+    dataHoraInicio: "",
+    usuarioId: "",
+    statusagendamentoId: 1,
+    pacienteFaltou: "",
+    pacientes: [],
+    escolhido: null,
+    salvando: false,
+  });
+
+  async function abrirEncaixe(appointment: Agendamento) {
+    try {
+      // Busca o agendamento completo (usuario_id, data_hora_inicio ISO)
+      const completo = await fetchAgendamentoById(appointment.id);
+      const rawId = appointment.id;
+
+      const lista = await fetchPacientes();
+
+      setEncaixeDialog({
+        aberto: true,
+        appointmentId: rawId,
+        // data_hora_inicio vem em snake no objeto bruto? usamos o id e buscamos no servidor ao confirmar
+        dataHoraInicio: "",
+        usuarioId: "",
+        statusagendamentoId: completo.statusagendamento_id,
+        pacienteFaltou: appointment.patientName,
+        pacientes: lista.map((p) => ({
+          paciente_id: p.paciente_id,
+          nome: p.nome,
+        })),
+        escolhido: null,
+        salvando: false,
+      });
+    } catch {
+      toast.error("Erro ao preparar o encaixe");
+    }
+  }
+
+  async function confirmarEncaixe() {
+    const d = encaixeDialog;
+
+    if (!d.appointmentId || !d.escolhido) {
+      toast.error("Selecione o paciente para o encaixe");
+      return;
+    }
+
+    setEncaixeDialog((x) => ({ ...x, salvando: true }));
+
+    try {
+      // recupera dados completos do agendamento faltoso
+      const completo = await fetchAgendamentoById(d.appointmentId);
+      const bruto = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/agendamentos/${d.appointmentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(
+              "token"
+            )}`,
+          },
+        }
+      ).then((r) => r.json());
+
+      const ag = bruto?.data || bruto;
+
+      // 1) libera o horário (cancela o faltoso)
+      await cancelAgendamento(d.appointmentId);
+
+      // 2) cria o encaixe no mesmo horário
+      await createAgendamento({
+        usuarioId: ag.usuario_id,
+        pacienteId: d.escolhido,
+        statusagendamentoId:
+          d.statusagendamentoId || ag.statusagendamento_id,
+        dataHoraInicio: ag.data_hora_inicio,
+        observacoes: "Encaixe sobre falta",
+      });
+
+      toast.success("Encaixe realizado no horário vago");
+
+      setEncaixeDialog((x) => ({ ...x, aberto: false }));
+
+      loadAppointments();
+    } catch (error: any) {
+      toast.error(
+        error?.message || "Erro ao realizar o encaixe"
+      );
+    } finally {
+      setEncaixeDialog((x) => ({ ...x, salvando: false }));
+    }
+  }
+
+  // status que indicam paciente faltou/não veio
+  const STATUS_FALTA = ["faltou", "expirado", "no_show", "não realizado", "nao realizado"];
+
+  function ehFalta(statusNome: string): boolean {
+    return STATUS_FALTA.includes(statusNome.toLowerCase());
+  }
 
   async function loadAppointments() {
     try {
@@ -308,13 +467,23 @@ export function AppointmentsPage() {
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <Button
             variant="outline"
             onClick={() => navigate("/dashboard")}
           >
             <Calendar className="w-4 h-4 mr-2" />
             Planner
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => setRiscoDialogOpen(true)}
+            className="border-rose-300 text-rose-600 hover:bg-rose-50"
+            title="Entenda o risco de falta (sistema de pontos)"
+          >
+            <ShieldAlert className="w-4 h-4 mr-2" />
+            Risco
           </Button>
 
           <Button
@@ -443,6 +612,7 @@ export function AppointmentsPage() {
                 <TableHead>Horário</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Comparecimento</TableHead>
+                <TableHead>Risco de falta</TableHead>
                 <TableHead className="text-right">
                   Ações
                 </TableHead>
@@ -486,6 +656,26 @@ export function AppointmentsPage() {
                     {getAttendanceBadge(appointment)}
                   </TableCell>
 
+                  <TableCell>
+                    <RiscoPaciente
+                      agendamento={appointment}
+                      historico={appointments}
+                      contatado={contatados.has(
+                        appointment.patientId
+                      )}
+                      onContato={() =>
+                        marcarContatado(
+                          appointment.patientId
+                        )
+                      }
+                      onDesfazer={() =>
+                        desfazerContato(
+                          appointment.patientId
+                        )
+                      }
+                    />
+                  </TableCell>
+
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -496,6 +686,21 @@ export function AppointmentsPage() {
                         <History className="w-4 h-4 mr-1" />
                         Histórico
                       </Button>
+
+                      {ehFalta(appointment.statusNome) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-emerald-400 text-emerald-700 hover:bg-emerald-50"
+                          onClick={() =>
+                            abrirEncaixe(appointment)
+                          }
+                          title="Paciente faltou? Encaixe outro no horário (evita perda)"
+                        >
+                          <UserPlus className="w-4 h-4 mr-1" />
+                          Encaixar
+                        </Button>
+                      )}
 
                       <Button
                         size="sm"
@@ -653,6 +858,177 @@ export function AppointmentsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Legenda do risco gamificado */}
+      <Dialog
+        open={riscoDialogOpen}
+        onOpenChange={setRiscoDialogOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-rose-500" />
+              Risco de falta — sistema de pontos
+            </DialogTitle>
+            <DialogDescription>
+              Como o risco de cada consulta é calculado (gamificado),
+              para o operador priorizar contatos.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <table className="w-full text-sm">
+              <tbody>
+                {REGRAS_RISCO.map((r, i) => (
+                  <tr key={i} className="border-b border-slate-100">
+                    <td className="py-2 text-slate-600">{r.fator}</td>
+                    <td className="py-2 text-right font-semibold text-slate-800">
+                      {r.pontos} pts
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="flex items-center gap-3 text-xs">
+              <span className="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                Baixo 0–39
+              </span>
+              <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+                Médio 40–69
+              </span>
+              <span className="px-2 py-1 rounded-full bg-rose-100 text-rose-700">
+                Alto 70–100
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              💡 Ao marcar um paciente como <strong>contatado</strong>,
+              o selo é marcado com ✓ para a sessão atual — o operador
+              confirma que já avisou o paciente sobre a consulta.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de encaixe (substitui falta por outro paciente) */}
+      <Dialog
+        open={encaixeDialog.aberto}
+        onOpenChange={(aberto) =>
+          setEncaixeDialog((d) => ({ ...d, aberto }))
+        }
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-emerald-600" />
+              Substituir por Encaixe
+            </DialogTitle>
+            <DialogDescription>
+              O paciente <strong>{encaixeDialog.pacienteFaltou}</strong>{" "}
+              não compareceu. Encaixe outro paciente no mesmo horário
+              (evita a perda do slot).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              Paciente para o encaixe
+            </label>
+            <select
+              value={encaixeDialog.escolhido ?? ""}
+              onChange={(e) =>
+                setEncaixeDialog((d) => ({
+                  ...d,
+                  escolhido: Number(e.target.value),
+                }))
+              }
+              className="w-full border rounded-md px-3 py-2 dark:bg-slate-900"
+            >
+              <option value="">Selecione um paciente…</option>
+              {encaixeDialog.pacientes.map((p) => (
+                <option key={p.paciente_id} value={p.paciente_id}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setEncaixeDialog((d) => ({ ...d, aberto: false }))
+              }
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmarEncaixe}
+              disabled={encaixeDialog.salvando || !encaixeDialog.escolhido}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {encaixeDialog.salvando
+                ? "Encaixando..."
+                : "Confirmar encaixe"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+    </div>
+  );
+}
+// Selo de risco de falta por consulta, com ação do operador
+function RiscoPaciente({
+  agendamento,
+  historico,
+  contatado,
+  onContato,
+  onDesfazer,
+}: {
+  agendamento: Agendamento;
+  historico: Agendamento[];
+  contatado: boolean;
+  onContato: () => void;
+  onDesfazer: () => void;
+}) {
+  const { pontos, nivel } = calcularRisco(historico, agendamento);
+
+  if (contatado) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 text-white px-2 py-0.5 text-xs">
+          <CheckCircle2 className="w-3 h-3" /> Contatado
+        </span>
+        <button
+          onClick={onDesfazer}
+          className="text-[10px] text-slate-400 underline"
+          title="Desfazer contato"
+        >
+          desfazer
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        title={`${nivel.texto} · ${rotuloRisco(pontos)} · clique para marcar como contatado`}
+        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${nivel.cor}`}
+      >
+        {rotuloRisco(pontos)}
+      </span>
+
+      {pontos >= 40 && (
+        <button
+          onClick={onContato}
+          className="text-[10px] text-blue-600 underline whitespace-nowrap"
+          title="Marcar paciente como contatado"
+        >
+          contato feito?
+        </button>
+      )}
     </div>
   );
 }

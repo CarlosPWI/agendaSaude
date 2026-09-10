@@ -53,7 +53,7 @@ export function OcupacaoCalendar({
             {format(primeiro, "MMMM yyyy", { locale: ptBR })}
           </span>
         </h3>
-        <div className="flex items-center gap-2 text-[10px] dark:dark:text-slate-500">
+        <div className="flex items-center gap-2 text-[10px] dark:text-slate-500">
           <span className="flex items-center gap-1">
             <i className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
             &lt;50%

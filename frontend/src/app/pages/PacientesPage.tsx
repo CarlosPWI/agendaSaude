@@ -33,9 +33,11 @@ import {
 
 import { Badge } from "../components/ui/badge";
 
-import { Search, Plus, User, Phone, Users, Edit, X } from "lucide-react";
+import { Search, Plus, User, Phone, Users, Edit, X, AlertCircle } from "lucide-react";
 
 import { toast } from "sonner";
+
+import { ListSkeleton } from "../components/ListSkeleton";
 
 import { Paciente, fetchPacientes } from "../services/pacienteService";
 import {
@@ -50,6 +52,7 @@ export function PacientesPage() {
   const [agentes, setAgentes] = useState<AgenteComunitario[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [searchNome, setSearchNome] = useState("");
   const [searchSus, setSearchSus] = useState("");
@@ -57,23 +60,27 @@ export function PacientesPage() {
     "todos" | "ativo" | "inativo"
   >("todos");
 
-  useEffect(() => {
-    async function carregar() {
-      try {
-        const [pac, agt] = await Promise.all([
-          fetchPacientes(),
-          fetchAgentes(),
-        ]);
+  async function carregar() {
+    setLoading(true);
+    setError("");
 
-        setPacientes(pac);
-        setAgentes(agt);
-      } catch {
-        toast.error("Erro ao carregar pacientes");
-      } finally {
-        setLoading(false);
-      }
+    try {
+      const [pac, agt] = await Promise.all([
+        fetchPacientes(),
+        fetchAgentes(),
+      ]);
+
+      setPacientes(pac);
+      setAgentes(agt);
+    } catch {
+      setError("Erro ao carregar pacientes");
+      toast.error("Erro ao carregar pacientes");
+    } finally {
+      setLoading(false);
     }
+  }
 
+  useEffect(() => {
     carregar();
   }, []);
 
@@ -124,8 +131,23 @@ export function PacientesPage() {
 
   if (loading) {
     return (
-      <div className="text-center py-20">
-        Carregando pacientes...
+      <div className="space-y-6">
+        <div className="h-9 w-48 bg-accent animate-pulse rounded-md" />
+        <ListSkeleton rows={8} label="Carregando pacientes..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <AlertCircle className="w-8 h-8 text-red-500" />
+
+        <p className="text-red-600">{error}</p>
+
+        <Button variant="outline" onClick={carregar}>
+          Tentar novamente
+        </Button>
       </div>
     );
   }
@@ -164,9 +186,10 @@ export function PacientesPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <Label>Nome</Label>
+              <Label htmlFor="filtro-nome">Nome</Label>
 
               <Input
+                id="filtro-nome"
                 placeholder="Buscar por nome"
                 value={searchNome}
                 onChange={(e) =>
@@ -176,9 +199,10 @@ export function PacientesPage() {
             </div>
 
             <div>
-              <Label>Nº SUS</Label>
+              <Label htmlFor="filtro-sus">Nº SUS</Label>
 
               <Input
+                id="filtro-sus"
                 placeholder="Buscar por nº do SUS"
                 value={searchSus}
                 onChange={(e) =>
@@ -188,7 +212,9 @@ export function PacientesPage() {
             </div>
 
             <div>
-              <Label>Status</Label>
+              <Label htmlFor="filtro-status-paciente">
+                Status
+              </Label>
 
               <Select
                 value={statusFilter}
@@ -196,7 +222,7 @@ export function PacientesPage() {
                   setStatusFilter(value)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="filtro-status-paciente">
                   <SelectValue />
                 </SelectTrigger>
 

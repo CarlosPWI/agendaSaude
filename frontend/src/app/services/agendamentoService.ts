@@ -123,6 +123,8 @@ export async function createAgendamento(data: {
   statusagendamentoId: number;
   dataHoraInicio: string;
   observacoes?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
 }) {
   const response = await apiFetch(`/agendamentos`, {
     method: "POST",
@@ -132,6 +134,8 @@ export async function createAgendamento(data: {
       statusagendamento_id: data.statusagendamentoId,
       data_hora_inicio: data.dataHoraInicio,
       observacoes: data.observacoes || null,
+      email: data.email || null,
+      whatsapp: data.whatsapp || null,
     }),
   });
 
@@ -154,6 +158,8 @@ export async function updateAgendamento(
     statusagendamentoId: number;
     dataHoraInicio: string;
     observacoes?: string | null;
+    email?: string | null;
+    whatsapp?: string | null;
   }
 ) {
   const response = await apiFetch(`/agendamentos/${id}`, {
@@ -164,6 +170,8 @@ export async function updateAgendamento(
       statusagendamento_id: data.statusagendamentoId,
       data_hora_inicio: data.dataHoraInicio,
       observacoes: data.observacoes || null,
+      email: data.email || null,
+      whatsapp: data.whatsapp || null,
     }),
   });
 

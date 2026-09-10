@@ -30,9 +30,11 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 
-import { Search, Plus, Users, Pencil, X } from "lucide-react";
+import { Search, Plus, Users, Pencil, X, AlertCircle } from "lucide-react";
 
 import { toast } from "sonner";
+
+import { ListSkeleton } from "../components/ListSkeleton";
 
 import { fetchPacientes } from "../services/pacienteService";
 import {
@@ -50,6 +52,7 @@ export function AgentesComunitariosPage() {
   >({});
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [searchNome, setSearchNome] = useState("");
 
   const [editando, setEditando] = useState<AgenteComunitario | null>(null);
@@ -57,6 +60,9 @@ export function AgentesComunitariosPage() {
   const [salvando, setSalvando] = useState(false);
 
   async function carregar() {
+    setLoading(true);
+    setError("");
+
     try {
       const [agt, pac] = await Promise.all([
         fetchAgentes(),
@@ -74,6 +80,7 @@ export function AgentesComunitariosPage() {
 
       setPacientesPorAgente(contagem);
     } catch {
+      setError("Erro ao carregar agentes");
       toast.error("Erro ao carregar agentes");
     } finally {
       setLoading(false);
@@ -124,8 +131,23 @@ export function AgentesComunitariosPage() {
 
   if (loading) {
     return (
-      <div className="text-center py-20">
-        Carregando agentes comunitários...
+      <div className="space-y-6">
+        <div className="h-9 w-56 bg-accent animate-pulse rounded-md" />
+        <ListSkeleton rows={6} label="Carregando agentes comunitários..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <AlertCircle className="w-8 h-8 text-red-500" />
+
+        <p className="text-red-600">{error}</p>
+
+        <Button variant="outline" onClick={carregar}>
+          Tentar novamente
+        </Button>
       </div>
     );
   }
@@ -163,9 +185,10 @@ export function AgentesComunitariosPage() {
 
         <CardContent>
           <div className="max-w-sm">
-            <Label>Nome</Label>
+            <Label htmlFor="filtro-agente-nome">Nome</Label>
 
             <Input
+              id="filtro-agente-nome"
               placeholder="Buscar por nome"
               value={searchNome}
               onChange={(e) => setSearchNome(e.target.value)}

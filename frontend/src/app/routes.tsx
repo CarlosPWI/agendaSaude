@@ -14,27 +14,34 @@ import { PlannerPage } from "./pages/PlannerPage";
 import { PacientesPage } from "./pages/PacientesPage";
 import { AgentesComunitariosPage } from "./pages/AgentesComunitariosPage";
 import { UpVisualPage } from "./pages/UpVisualPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: LoginPage,
+    ErrorBoundary: RouteErrorBoundary,
   },
   {
     path: "/register",
     Component: RegisterPage,
+    ErrorBoundary: RouteErrorBoundary,
   },
   {
     path: "/forgot-password",
     Component: ForgotPasswordPage,
+    ErrorBoundary: RouteErrorBoundary,
   },
   {
     path: "/reset-password",
     Component: ResetPasswordPage,
+    ErrorBoundary: RouteErrorBoundary,
   },
   {
     path: "/dashboard",
     Component: DashboardLayout,
+    ErrorBoundary: RouteErrorBoundary,
     children: [
       {
         index: true,
@@ -77,5 +84,9 @@ export const router = createBrowserRouter([
         Component: ReschedulePage,
       },
     ],
+  },
+  {
+    path: "*",
+    Component: NotFoundPage,
   },
 ]);

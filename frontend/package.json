@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/app/utils/validators.test.ts src/app/utils/risco.test.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },

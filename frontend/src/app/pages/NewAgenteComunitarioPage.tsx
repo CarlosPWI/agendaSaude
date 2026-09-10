@@ -114,11 +114,15 @@ export function NewAgenteComunitarioPage() {
           className="space-y-5"
         >
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="agente-nome"
+              className="text-sm font-medium"
+            >
               Nome
             </label>
 
             <input
+              id="agente-nome"
               type="text"
               required
               maxLength={50}

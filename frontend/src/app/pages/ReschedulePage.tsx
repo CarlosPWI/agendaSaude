@@ -360,11 +360,15 @@ export function ReschedulePage() {
           className="space-y-5"
         >
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="reagendar-paciente"
+              className="text-sm font-medium"
+            >
               Paciente
             </label>
 
             <select
+              id="reagendar-paciente"
               required
               value={String(
                 formData.paciente_id
@@ -409,11 +413,15 @@ export function ReschedulePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="reagendar-status"
+              className="text-sm font-medium"
+            >
               Status
             </label>
 
             <select
+              id="reagendar-status"
               required
               value={String(
                 formData.statusagendamento_id
@@ -459,11 +467,15 @@ export function ReschedulePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="reagendar-data"
+                className="text-sm font-medium"
+              >
                 Data
               </label>
 
               <input
+                id="reagendar-data"
                 type="date"
                 required
                 value={formData.data}
@@ -479,11 +491,15 @@ export function ReschedulePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="reagendar-horario"
+                className="text-sm font-medium"
+              >
                 Horário
               </label>
 
               <select
+                id="reagendar-horario"
                 required
                 value={
                   formData.horario
@@ -516,11 +532,15 @@ export function ReschedulePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="reagendar-observacoes"
+              className="text-sm font-medium"
+            >
               Observações
             </label>
 
             <textarea
+              id="reagendar-observacoes"
               rows={4}
               value={
                 formData.observacoes

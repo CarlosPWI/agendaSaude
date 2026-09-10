@@ -72,7 +72,14 @@ class AgendamentoService:
                 data.paciente_id
             ) or {}
 
-            if not paciente.get("email"):
+            # Prioriza o e-mail informado no próprio agendamento;
+            # cai para o e-mail do cadastro do paciente.
+            email_destino = (
+                getattr(data, "email", None)
+                or paciente.get("email")
+            )
+
+            if not email_destino:
                 return
 
             agendamento_id = agendamento.get(
@@ -80,7 +87,7 @@ class AgendamentoService:
             ) or data.paciente_id
 
             NotificacaoService.confirmar_agendamento(
-                paciente_email=paciente["email"],
+                paciente_email=email_destino,
                 paciente_nome=paciente.get("nome") or "",
                 agendamento_id=agendamento_id,
                 data_hora_inicio=inicio,

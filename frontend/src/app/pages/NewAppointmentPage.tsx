@@ -4,6 +4,12 @@ import { toast } from "sonner";
 import { HORARIOS_DISPONIVEIS } from "../constants/horarios";
 import { handleUnauthorized } from "../services/session";
 import { apiFetch } from "../services/apiClient";
+import {
+  validarEmail,
+  validarWhatsapp,
+  mascararWhatsapp,
+  apenasDigitos,
+} from "../utils/validators";
 
 export function NewAppointmentPage() {
   const navigate = useNavigate();
@@ -31,8 +37,16 @@ export function NewAppointmentPage() {
       statusagendamento_id: 0,
       data: "",
       horario: "",
+      email: "",
+      whatsapp: "",
       observacoes: "",
     });
+
+  const [emailError, setEmailError] =
+    useState("");
+
+  const [whatsappError, setWhatsappError] =
+    useState("");
 
   useEffect(() => {
     carregarDados();
@@ -222,6 +236,30 @@ export function NewAppointmentPage() {
         return;
       }
 
+      const emailErro = validarEmail(
+        formData.email
+      );
+
+      setEmailError(emailErro);
+
+      if (emailErro) {
+        toast.error(emailErro);
+
+        return;
+      }
+
+      const whatsappErro = validarWhatsapp(
+        formData.whatsapp
+      );
+
+      setWhatsappError(whatsappErro);
+
+      if (whatsappErro) {
+        toast.error(whatsappErro);
+
+        return;
+      }
+
       if (!apiUrl) {
         throw new Error(
           "VITE_API_URL não configurada"
@@ -270,6 +308,13 @@ export function NewAppointmentPage() {
             formData.data,
             formData.horario
           ),
+
+        email:
+          formData.email.trim() || null,
+
+        whatsapp:
+          apenasDigitos(formData.whatsapp) ||
+          null,
 
         observacoes:
           formData.observacoes.trim() ||
@@ -357,11 +402,15 @@ export function NewAppointmentPage() {
           className="space-y-5"
         >
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="paciente_id"
+              className="text-sm font-medium"
+            >
               Paciente
             </label>
 
             <select
+              id="paciente_id"
               required
               disabled={
                 loadingPacientes
@@ -411,11 +460,15 @@ export function NewAppointmentPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="statusagendamento_id"
+              className="text-sm font-medium"
+            >
               Status do Agendamento
             </label>
 
             <select
+              id="statusagendamento_id"
               required
               disabled={
                 loadingStatus
@@ -467,11 +520,15 @@ export function NewAppointmentPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="data"
+                className="text-sm font-medium"
+              >
                 Data
               </label>
 
               <input
+                id="data"
                 type="date"
                 required
                 value={formData.data}
@@ -486,11 +543,15 @@ export function NewAppointmentPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="horario"
+                className="text-sm font-medium"
+              >
                 Horário
               </label>
 
               <select
+                id="horario"
                 required
                 value={formData.horario}
                 onChange={(e) =>
@@ -520,12 +581,118 @@ export function NewAppointmentPage() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium"
+              >
+                E-mail
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                aria-invalid={emailError ? true : undefined}
+                aria-describedby={
+                  emailError ? "email-error" : undefined
+                }
+                value={formData.email}
+                onChange={(e) => {
+                  const valor = e.target.value;
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    email: valor,
+                  }));
+
+                  setEmailError(
+                    validarEmail(valor)
+                  );
+                }}
+                placeholder="paciente@email.com"
+                className={`w-full border rounded-md px-3 py-2 ${
+                  emailError
+                    ? "border-red-500"
+                    : ""
+                }`}
+              />
+
+              {emailError && (
+                <p
+                  id="email-error"
+                  role="alert"
+                  className="text-xs text-red-500"
+                >
+                  {emailError}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="whatsapp"
+                className="text-sm font-medium"
+              >
+                WhatsApp
+              </label>
+
+              <input
+                id="whatsapp"
+                type="tel"
+                inputMode="numeric"
+                maxLength={20}
+                aria-invalid={whatsappError ? true : undefined}
+                aria-describedby={
+                  whatsappError
+                    ? "whatsapp-error"
+                    : undefined
+                }
+                value={formData.whatsapp}
+                onChange={(e) => {
+                  const valor = mascararWhatsapp(
+                    e.target.value
+                  );
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    whatsapp: valor,
+                  }));
+
+                  setWhatsappError(
+                    validarWhatsapp(valor)
+                  );
+                }}
+                placeholder="(11) 99999-9999"
+                className={`w-full border rounded-md px-3 py-2 ${
+                  whatsappError
+                    ? "border-red-500"
+                    : ""
+                }`}
+              />
+
+              {whatsappError && (
+                <p
+                  id="whatsapp-error"
+                  role="alert"
+                  className="text-xs text-red-500"
+                >
+                  {whatsappError}
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="observacoes"
+              className="text-sm font-medium"
+            >
               Observações
             </label>
 
             <textarea
+              id="observacoes"
               rows={4}
               maxLength={250}
               value={

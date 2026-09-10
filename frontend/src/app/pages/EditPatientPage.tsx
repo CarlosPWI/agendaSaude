@@ -8,8 +8,10 @@ import { toast } from "sonner";
 
 import { handleUnauthorized } from "../services/session";
 import { apiFetch } from "../services/apiClient";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import {
+  EMAIL_REGEX,
+  mascararTelefone,
+} from "../utils/validators";
 
 export function EditPatientPage() {
   const navigate = useNavigate();
@@ -272,7 +274,7 @@ export function EditPatientPage() {
         return;
       }
 
-      if (!EMAIL_RE.test(email)) {
+      if (!EMAIL_REGEX.test(email)) {
         setEmailError(
           "Informe um e-mail válido (ex.: nome@provedor.com)"
         );
@@ -437,11 +439,15 @@ export function EditPatientPage() {
           className="space-y-5"
         >
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="edit-agentecomunitario_id"
+              className="text-sm font-medium"
+            >
               Agente Comunitário
             </label>
 
             <select
+              id="edit-agentecomunitario_id"
               required
               value={String(
                 formData.agentecomunitario_id
@@ -487,11 +493,15 @@ export function EditPatientPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="edit-nome"
+              className="text-sm font-medium"
+            >
               Nome Completo
             </label>
 
             <input
+              id="edit-nome"
               type="text"
               required
               maxLength={150}
@@ -509,11 +519,15 @@ export function EditPatientPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="edit-numero_sus"
+                className="text-sm font-medium"
+              >
                 Número do SUS
               </label>
 
               <input
+                id="edit-numero_sus"
                 type="text"
                 required
                 maxLength={20}
@@ -533,11 +547,15 @@ export function EditPatientPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="edit-data_nascimento"
+                className="text-sm font-medium"
+              >
                 Data de Nascimento
               </label>
 
               <input
+                id="edit-data_nascimento"
                 type="date"
                 required
                 value={
@@ -557,13 +575,21 @@ export function EditPatientPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="edit-email"
+                className="text-sm font-medium"
+              >
                 E-mail <span className="text-red-500">*</span>
               </label>
 
               <input
+                id="edit-email"
                 type="email"
                 required
+                aria-invalid={emailError ? true : undefined}
+                aria-describedby={
+                  emailError ? "edit-email-error" : undefined
+                }
                 value={formData.email}
                 onChange={(e) => {
                   setFormData((prev) => ({
@@ -582,26 +608,36 @@ export function EditPatientPage() {
               />
 
               {emailError && (
-                <p className="text-sm text-red-600">
+                <p
+                  id="edit-email-error"
+                  role="alert"
+                  className="text-sm text-red-600"
+                >
                   {emailError}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="edit-telefone"
+                className="text-sm font-medium"
+              >
                 Telefone
               </label>
 
               <input
-                type="text"
+                id="edit-telefone"
+                type="tel"
+                inputMode="numeric"
                 maxLength={20}
                 value={formData.telefone}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    telefone:
-                      e.target.value,
+                    telefone: mascararTelefone(
+                      e.target.value
+                    ),
                   }))
                 }
                 className="w-full border rounded-md px-3 py-2"
@@ -611,11 +647,15 @@ export function EditPatientPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="edit-status"
+              className="text-sm font-medium"
+            >
               Status
             </label>
 
             <select
+              id="edit-status"
               value={formData.status}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -637,11 +677,15 @@ export function EditPatientPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="edit-observacoes"
+              className="text-sm font-medium"
+            >
               Observações
             </label>
 
             <textarea
+              id="edit-observacoes"
               rows={5}
               maxLength={500}
               value={

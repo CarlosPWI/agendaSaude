@@ -2,6 +2,9 @@
 .env
 .env.*
 
+# Chaves/tokens locais
+/chaveiro*
+
 # 🐍 Python
 __pycache__/
 *.py[cod]

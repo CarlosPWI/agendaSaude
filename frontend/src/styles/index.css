@@ -1,2 +1,10 @@
 @import './tailwind.css';
 @import './theme.css';
+
+/* Acessibilidade: foco visível consistente em todos os controles */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+

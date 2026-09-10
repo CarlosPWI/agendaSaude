@@ -1,15 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 
-import { format, addDays, startOfWeek } from "date-fns";
+import {
+  format,
+  addDays,
+  startOfWeek,
+  startOfMonth,
+  endOfMonth,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
+  isToday,
+  addMonths,
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Flag,
   Plus,
   Pencil,
+  AlertCircle,
+  Search,
+  Download,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -21,6 +37,18 @@ import { HORARIOS_DISPONIVEIS } from "../constants/horarios";
 import { feriadoNa } from "../constants/feriados";
 
 import { Button } from "../components/ui/button";
+import { ListSkeleton } from "../components/ListSkeleton";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../components/ui/alert-dialog";
 
 import {
   Dialog,
@@ -80,8 +108,16 @@ export function PlannerPage() {
     useState(new Date());
 
   const [viewMode, setViewMode] = useState<
-    "day" | "week"
+    "day" | "week" | "month"
   >("day");
+
+  // Cliente escolhe se quer ver os feriados nacionais na agenda
+  const [mostrarFeriados, setMostrarFeriados] =
+    useState(true);
+
+  // Busca por nome de paciente na agenda
+  const [buscaPaciente, setBuscaPaciente] =
+    useState("");
 
   const [agendamentos, setAgendamentos] =
     useState<Agendamento[]>([]);
@@ -114,6 +150,13 @@ export function PlannerPage() {
 
   const [loading, setLoading] =
     useState(true);
+
+  // Confirmação antes de liberar um horário ocupado
+  const [liberarDialog, setLiberarDialog] =
+    useState<{
+      aberto: boolean;
+      ocupacao: OcupacaoSlot | null;
+    }>({ aberto: false, ocupacao: null });
 
   const [error, setError] =
     useState("");
@@ -322,10 +365,17 @@ export function PlannerPage() {
       "yyyy-MM-dd"
     );
 
+    const termo = buscaPaciente
+      .trim()
+      .toLowerCase();
+
     return agendamentos.filter(
       (agendamento) =>
-        agendamento.data ===
-        formattedDate
+        agendamento.data === formattedDate &&
+        (!termo ||
+          agendamento.pacienteNome
+            .toLowerCase()
+            .includes(termo))
     );
   }
 
@@ -363,6 +413,7 @@ export function PlannerPage() {
     }, [
       selectedDate,
       agendamentos,
+      buscaPaciente,
     ]);
 
   const weekAppointments =
@@ -373,9 +424,38 @@ export function PlannerPage() {
     }, [
       selectedDate,
       agendamentos,
+      buscaPaciente,
     ]);
 
+  const monthDays = useMemo(() => {
+    const inicio = startOfWeek(
+      startOfMonth(selectedDate),
+      { weekStartsOn: 0 }
+    );
+
+    const fim = endOfWeek(
+      endOfMonth(selectedDate),
+      { weekStartsOn: 0 }
+    );
+
+    return eachDayOfInterval({
+      start: inicio,
+      end: fim,
+    }).map((date) => ({
+      date,
+      appointments:
+        getDayAppointments(date),
+    }));
+  }, [selectedDate, agendamentos, buscaPaciente]);
+
   function handlePreviousDay() {
+    if (viewMode === "month") {
+      setSelectedDate(
+        addMonths(selectedDate, -1)
+      );
+      return;
+    }
+
     const previous = new Date(
       selectedDate
     );
@@ -391,6 +471,13 @@ export function PlannerPage() {
   }
 
   function handleNextDay() {
+    if (viewMode === "month") {
+      setSelectedDate(
+        addMonths(selectedDate, 1)
+      );
+      return;
+    }
+
     const next = new Date(
       selectedDate
     );
@@ -407,6 +494,67 @@ export function PlannerPage() {
 
   function handleToday() {
     setSelectedDate(new Date());
+  }
+
+  // Exporta a visualização atual (dia/semana/mês) em CSV
+  function exportarAgenda() {
+    const linhas =
+      viewMode === "day"
+        ? todayAppointments
+        : viewMode === "week"
+        ? weekAppointments.flatMap(
+            (d) => d.appointments
+          )
+        : monthDays.flatMap(
+            (d) => d.appointments
+          );
+
+    if (linhas.length === 0) {
+      toast.error(
+        "Nada para exportar nesta visualização"
+      );
+
+      return;
+    }
+
+    const escapar = (valor: string) =>
+      `"${(valor ?? "").replace(/"/g, '""')}"`;
+
+    const csv = [
+      ["Data", "Horário", "Paciente", "Status"]
+        .map(escapar)
+        .join(";"),
+
+      ...linhas.map((a) =>
+        [
+          a.data,
+          a.horario,
+          a.pacienteNome,
+          a.status,
+        ]
+          .map(escapar)
+          .join(";")
+      ),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `agenda-${format(
+      selectedDate,
+      "yyyy-MM-dd"
+    )}.csv`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+    toast.success("Agenda exportada");
   }
 
   function getAppointmentByTime(
@@ -589,21 +737,26 @@ export function PlannerPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">
-          Carregando
-          agendamentos...
-        </p>
+      <div className="space-y-6">
+        <div className="h-9 w-40 bg-accent animate-pulse rounded-md" />
+        <ListSkeleton rows={7} label="Carregando agendamentos..." />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-red-500">
-          {error}
-        </p>
+      <div className="flex flex-col items-center justify-center gap-3 h-64 text-center">
+        <AlertCircle className="w-8 h-8 text-red-500" />
+
+        <p className="text-red-500">{error}</p>
+
+        <Button
+          variant="outline"
+          onClick={carregarDados}
+        >
+          Tentar novamente
+        </Button>
       </div>
     );
   }
@@ -646,6 +799,8 @@ export function PlannerPage() {
                 onClick={
                   handlePreviousDay
                 }
+                aria-label="Período anterior"
+                title="Período anterior"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
@@ -663,6 +818,8 @@ export function PlannerPage() {
                 onClick={
                   handleNextDay
                 }
+                aria-label="Próximo período"
+                title="Próximo período"
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -672,21 +829,86 @@ export function PlannerPage() {
               <Calendar className="w-5 h-5 text-muted-foreground" />
 
               <span className="font-medium capitalize">
-                {format(
-                  selectedDate,
-                  "EEEE, dd 'de' MMMM 'de' yyyy",
-                  {
-                    locale: ptBR,
-                  }
-                )}
+                {viewMode === "month"
+                  ? format(
+                      selectedDate,
+                      "MMMM 'de' yyyy",
+                      {
+                        locale: ptBR,
+                      }
+                    )
+                  : format(
+                      selectedDate,
+                      "EEEE, dd 'de' MMMM 'de' yyyy",
+                      {
+                        locale: ptBR,
+                      }
+                    )}
               </span>
 
-              {feriadoNa(selectedDate) && (
+              {mostrarFeriados &&
+                feriadoNa(selectedDate) && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-700 px-2.5 py-0.5 text-xs font-semibold">
                   🎌 {feriadoNa(selectedDate)?.nome}
                 </span>
               )}
+
+              <Button
+                variant={
+                  mostrarFeriados
+                    ? "default"
+                    : "outline"
+                }
+                size="sm"
+                onClick={() =>
+                  setMostrarFeriados((v) => !v)
+                }
+                title={
+                  mostrarFeriados
+                    ? "Ocultar feriados nacionais"
+                    : "Mostrar feriados nacionais"
+                }
+                className="flex items-center gap-2"
+              >
+                <Flag className="w-4 h-4" />
+
+                {mostrarFeriados
+                  ? "Feriados: ativado"
+                  : "Feriados: desativado"}
+              </Button>
             </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="relative max-w-sm flex-1 min-w-[220px]">
+              <label htmlFor="planner-busca" className="sr-only">
+                Buscar paciente
+              </label>
+
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+
+              <input
+                id="planner-busca"
+                type="search"
+                value={buscaPaciente}
+                onChange={(e) =>
+                  setBuscaPaciente(e.target.value)
+                }
+                placeholder="Buscar paciente na agenda..."
+                className="w-full border rounded-md pl-9 pr-3 py-2 dark:bg-slate-900"
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportarAgenda}
+              className="flex items-center gap-2"
+              title="Exportar a agenda atual em CSV"
+            >
+              <Download className="w-4 h-4" />
+              Exportar CSV
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -698,6 +920,7 @@ export function PlannerPage() {
             value as
               | "day"
               | "week"
+              | "month"
           )
         }
       >
@@ -710,6 +933,11 @@ export function PlannerPage() {
           <TabsTrigger value="week">
             Visualização
             Semanal
+          </TabsTrigger>
+
+          <TabsTrigger value="month">
+            Visualização
+            Mensal
           </TabsTrigger>
         </TabsList>
 
@@ -753,6 +981,7 @@ export function PlannerPage() {
 
                             <div className="flex flex-col gap-2 min-w-[180px]">
                               <select
+                                aria-label={`Status do agendamento de ${appointment.pacienteNome}`}
                                 value={String(
                                   appointment.statusagendamento_id
                                 )}
@@ -861,9 +1090,10 @@ export function PlannerPage() {
                                     ocupacao.id
                                   }
                                   onClick={() =>
-                                    liberarSlot(
-                                      ocupacao
-                                    )
+                                    setLiberarDialog({
+                                      aberto: true,
+                                      ocupacao,
+                                    })
                                   }
                                   title="Liberar horário"
                                 >
@@ -947,7 +1177,8 @@ export function PlannerPage() {
                             ptBR,
                         }
                       )}
-                      {feriadoNa(day.date) && (
+                      {mostrarFeriados &&
+                        feriadoNa(day.date) && (
                         <span title={feriadoNa(day.date)?.nome}>
                           {" "}🎌
                         </span>
@@ -1000,6 +1231,7 @@ export function PlannerPage() {
                             </div>
 
                             <select
+                              aria-label={`Status do agendamento de ${appointment.pacienteNome}`}
                               value={String(
                                 appointment.statusagendamento_id
                               )}
@@ -1068,6 +1300,120 @@ export function PlannerPage() {
             )}
           </div>
         </TabsContent>
+
+        <TabsContent value="month">
+          <Card>
+            <CardContent className="p-3 overflow-x-auto">
+              <div className="grid grid-cols-7 gap-1 mb-2 min-w-[640px]">
+                {[
+                  "Dom",
+                  "Seg",
+                  "Ter",
+                  "Qua",
+                  "Qui",
+                  "Sex",
+                  "Sáb",
+                ].map((dia) => (
+                  <div
+                    key={dia}
+                    className="text-center text-xs font-semibold text-muted-foreground py-1"
+                  >
+                    {dia}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 min-w-[640px]">
+                {monthDays.map((day) => {
+                  const doMes = isSameMonth(
+                    day.date,
+                    selectedDate
+                  );
+
+                  const selecionado = isSameDay(
+                    day.date,
+                    selectedDate
+                  );
+
+                  const hoje = isToday(day.date);
+
+                  const feriado = feriadoNa(
+                    day.date
+                  );
+
+                  return (
+                    <button
+                      key={day.date.toISOString()}
+                      onClick={() => {
+                        setSelectedDate(day.date);
+                        setViewMode("day");
+                      }}
+                      title={
+                        feriado
+                          ? feriado.nome
+                          : undefined
+                      }
+                      className={`min-h-[72px] sm:min-h-[92px] rounded-lg border p-2 text-left align-top transition hover:border-primary hover:bg-accent ${
+                        selecionado
+                          ? "border-primary ring-2 ring-primary/30"
+                          : "border-border"
+                      } ${
+                        doMes ? "" : "opacity-40"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-sm font-semibold ${
+                            hoje
+                              ? "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                              : ""
+                          }`}
+                        >
+                          {format(day.date, "d")}
+                        </span>
+
+                        {mostrarFeriados &&
+                          feriado && (
+                          <span>🎌</span>
+                        )}
+                      </div>
+
+                      {day.appointments.length >
+                        0 && (
+                        <div className="mt-1 space-y-0.5">
+                          {day.appointments
+                            .slice(0, 3)
+                            .map((a) => (
+                              <div
+                                key={a.id}
+                                className={`truncate rounded px-1 py-0.5 text-[10px] ${getStatusColor(
+                                  a.status
+                                )}`}
+                                title={`${a.horario} ${a.pacienteNome}`}
+                              >
+                                {a.horario}{" "}
+                                {a.pacienteNome}
+                              </div>
+                            ))}
+
+                          {day.appointments.length >
+                            3 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              +
+                              {day.appointments
+                                .length - 3}{" "}
+                              mais
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Popup de configuração da ocupação (estilo Google Agenda) */}
@@ -1094,10 +1440,14 @@ export function PlannerPage() {
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              <label
+                htmlFor="ocupacao-tipo"
+                className="text-sm font-medium text-slate-700 dark:text-slate-200"
+              >
                 Tipo
               </label>
               <select
+                id="ocupacao-tipo"
                 value={ocuparDialog.tipo}
                 onChange={(e) =>
                   setOcuparDialog((d) => ({
@@ -1114,10 +1464,14 @@ export function PlannerPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              <label
+                htmlFor="ocupacao-titulo"
+                className="text-sm font-medium text-slate-700 dark:text-slate-200"
+              >
                 Título
               </label>
               <input
+                id="ocupacao-titulo"
                 type="text"
                 value={ocuparDialog.titulo}
                 onChange={(e) =>
@@ -1132,10 +1486,14 @@ export function PlannerPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              <label
+                htmlFor="ocupacao-observacoes"
+                className="text-sm font-medium text-slate-700 dark:text-slate-200"
+              >
                 Observações
               </label>
               <textarea
+                id="ocupacao-observacoes"
                 rows={4}
                 value={ocuparDialog.observacoes}
                 onChange={(e) =>
@@ -1177,6 +1535,55 @@ export function PlannerPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmação ao liberar um horário ocupado */}
+      <AlertDialog
+        open={liberarDialog.aberto}
+        onOpenChange={(aberto) =>
+          setLiberarDialog((d) => ({ ...d, aberto }))
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Liberar horário?
+            </AlertDialogTitle>
+
+            <AlertDialogDescription>
+              {liberarDialog.ocupacao
+                ? `"${liberarDialog.ocupacao.titulo}" será removido e o horário voltará a ficar livre.`
+                : "O horário voltará a ficar livre."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              Cancelar
+            </AlertDialogCancel>
+
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+
+                const ocupacao =
+                  liberarDialog.ocupacao;
+
+                setLiberarDialog({
+                  aberto: false,
+                  ocupacao: null,
+                });
+
+                if (ocupacao) {
+                  liberarSlot(ocupacao);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Sim, liberar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

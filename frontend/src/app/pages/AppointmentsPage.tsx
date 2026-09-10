@@ -68,11 +68,15 @@ import {
   UserMinus,
   UserPlus,
   ShieldAlert,
+  AlertCircle,
 } from "lucide-react";
 
 import { toast } from "sonner";
 
 import { AttendanceStats } from "../components/AttendanceStats";
+import { ListSkeleton } from "../components/ListSkeleton";
+
+import { apiFetch } from "../services/apiClient";
 
 import { Agendamento, RegistroAuditoria } from "../types/agendamento";
 import {
@@ -96,6 +100,7 @@ export function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Agendamento[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [searchStartDate, setSearchStartDate] = useState("");
   const [searchEndDate, setSearchEndDate] = useState("");
@@ -110,6 +115,8 @@ export function AppointmentsPage() {
   const [appointmentToCancel, setAppointmentToCancel] = useState<
     string | null
   >(null);
+
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const [auditDialogOpen, setAuditDialogOpen] = useState(false);
 
@@ -221,18 +228,11 @@ export function AppointmentsPage() {
     try {
       // recupera dados completos do agendamento faltoso
       const completo = await fetchAgendamentoById(d.appointmentId);
-      const bruto = await fetch(
-        `${
-          import.meta.env.VITE_API_URL
-        }/agendamentos/${d.appointmentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem(
-              "token"
-            )}`,
-          },
-        }
-      ).then((r) => r.json());
+      const resposta = await apiFetch(
+        `/agendamentos/${d.appointmentId}`
+      );
+
+      const bruto = await resposta.json();
 
       const ag = bruto?.data || bruto;
 
@@ -273,11 +273,13 @@ export function AppointmentsPage() {
   async function loadAppointments() {
     try {
       setLoading(true);
+      setError("");
 
       const data = await fetchAgendamentos();
 
       setAppointments(data);
-    } catch (error) {
+    } catch {
+      setError("Erro ao carregar consultas");
       toast.error("Erro ao carregar consultas");
     } finally {
       setLoading(false);
@@ -346,6 +348,8 @@ export function AppointmentsPage() {
     try {
       if (!appointmentToCancel) return;
 
+      setCancelLoading(true);
+
       await cancelAgendamento(appointmentToCancel);
 
       toast.success("Consulta cancelada com sucesso");
@@ -357,6 +361,8 @@ export function AppointmentsPage() {
       loadAppointments();
     } catch {
       toast.error("Erro ao cancelar consulta");
+    } finally {
+      setCancelLoading(false);
     }
   }
 
@@ -448,8 +454,23 @@ export function AppointmentsPage() {
 
   if (loading) {
     return (
-      <div className="text-center py-20">
-        Carregando consultas...
+      <div className="space-y-6">
+        <div className="h-9 w-64 bg-accent animate-pulse rounded-md" />
+        <ListSkeleton rows={8} label="Carregando consultas..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <AlertCircle className="w-8 h-8 text-red-500" />
+
+        <p className="text-red-600">{error}</p>
+
+        <Button variant="outline" onClick={loadAppointments}>
+          Tentar novamente
+        </Button>
       </div>
     );
   }
@@ -514,9 +535,12 @@ export function AppointmentsPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <Label>Data Inicial</Label>
+              <Label htmlFor="filtro-data-inicial">
+                Data Inicial
+              </Label>
 
               <Input
+                id="filtro-data-inicial"
                 type="date"
                 value={searchStartDate}
                 onChange={(e) =>
@@ -526,9 +550,12 @@ export function AppointmentsPage() {
             </div>
 
             <div>
-              <Label>Data Final</Label>
+              <Label htmlFor="filtro-data-final">
+                Data Final
+              </Label>
 
               <Input
+                id="filtro-data-final"
                 type="date"
                 value={searchEndDate}
                 onChange={(e) =>
@@ -538,9 +565,12 @@ export function AppointmentsPage() {
             </div>
 
             <div>
-              <Label>Paciente</Label>
+              <Label htmlFor="filtro-paciente">
+                Paciente
+              </Label>
 
               <Input
+                id="filtro-paciente"
                 placeholder="Nome do paciente"
                 value={searchPatientName}
                 onChange={(e) =>
@@ -550,7 +580,9 @@ export function AppointmentsPage() {
             </div>
 
             <div>
-              <Label>Status</Label>
+              <Label htmlFor="filtro-status">
+                Status
+              </Label>
 
               <Select
                 value={attendedFilter}
@@ -558,7 +590,7 @@ export function AppointmentsPage() {
                   setAttendedFilter(value)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="filtro-status">
                   <SelectValue />
                 </SelectTrigger>
 
@@ -764,10 +796,14 @@ export function AppointmentsPage() {
             </AlertDialogCancel>
 
             <AlertDialogAction
-              onClick={confirmCancel}
+              onClick={(e) => {
+                e.preventDefault();
+                confirmCancel();
+              }}
+              disabled={cancelLoading}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Sim, cancelar
+              {cancelLoading ? "Cancelando..." : "Sim, cancelar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

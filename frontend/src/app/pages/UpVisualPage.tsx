@@ -191,7 +191,7 @@ export function UpVisualPage() {
             <h2 className="text-lg font-bold dark:text-slate-100 leading-tight">
               Inteligência & Performance
             </h2>
-            <p className="text-xs dark:dark:text-slate-500">{tituloData}</p>
+            <p className="text-xs dark:text-slate-500">{tituloData}</p>
           </div>
         </div>
 
@@ -411,9 +411,9 @@ export function UpVisualPage() {
                   {risco.map((p, i) => (
                     <tr key={i} className="border-b border-slate-100">
                       <td className="py-2 font-medium dark:text-slate-200">{p.nome}</td>
-                      <td className="py-2 dark:dark:text-slate-500">{p.horario}</td>
-                      <td className="py-2 dark:dark:text-slate-500">{p.faixa}</td>
-                      <td className="py-2 dark:dark:text-slate-500">{p.distancia} km</td>
+                      <td className="py-2 dark:text-slate-500">{p.horario}</td>
+                      <td className="py-2 dark:text-slate-500">{p.faixa}</td>
+                      <td className="py-2 dark:text-slate-500">{p.distancia} km</td>
                       <td className="py-2">
                         <span
                           className={[
@@ -475,7 +475,7 @@ function Kpi({
       <div className={`w-9 h-9 rounded-lg grid place-items-center mb-3 ${cor}`}>
         {icon}
       </div>
-      <p className="text-xs dark:dark:text-slate-500">{rotulo}</p>
+      <p className="text-xs dark:text-slate-500">{rotulo}</p>
       <p className="text-2xl font-bold dark:text-slate-100 mt-0.5">{valor}</p>
       <p className="text-[11px] dark:text-slate-500 mt-0.5">{detalhe}</p>
     </div>

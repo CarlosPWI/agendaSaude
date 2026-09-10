@@ -147,6 +147,7 @@ export function LoginPage() {
             <input
               type="email"
               placeholder="E-mail"
+              aria-label="E-mail"
               value={email}
               onChange={(e) =>
                 setEmail(e.target.value)
@@ -160,6 +161,7 @@ export function LoginPage() {
             <input
               type="password"
               placeholder="Senha"
+              aria-label="Senha"
               value={password}
               onChange={(e) =>
                 setPassword(e.target.value)

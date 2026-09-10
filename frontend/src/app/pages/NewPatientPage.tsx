@@ -3,8 +3,10 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { handleUnauthorized } from "../services/session";
 import { apiFetch } from "../services/apiClient";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import {
+  EMAIL_REGEX,
+  mascararTelefone,
+} from "../utils/validators";
 
 export function NewPatientPage() {
   const navigate = useNavigate();
@@ -113,7 +115,7 @@ export function NewPatientPage() {
         return;
       }
 
-      if (!EMAIL_RE.test(email)) {
+      if (!EMAIL_REGEX.test(email)) {
         setEmailError(
           "Informe um e-mail válido (ex.: nome@provedor.com)"
         );
@@ -232,11 +234,15 @@ export function NewPatientPage() {
           className="space-y-5"
         >
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="agentecomunitario_id"
+              className="text-sm font-medium"
+            >
               Agente Comunitário
             </label>
 
             <select
+              id="agentecomunitario_id"
               required
               value={String(
                 formData.agentecomunitario_id
@@ -282,11 +288,15 @@ export function NewPatientPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="nome"
+              className="text-sm font-medium"
+            >
               Nome Completo
             </label>
 
             <input
+              id="nome"
               type="text"
               required
               maxLength={150}
@@ -304,11 +314,15 @@ export function NewPatientPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="numero_sus"
+                className="text-sm font-medium"
+              >
                 Número do SUS
               </label>
 
               <input
+                id="numero_sus"
                 type="text"
                 required
                 maxLength={20}
@@ -326,11 +340,15 @@ export function NewPatientPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="data_nascimento"
+                className="text-sm font-medium"
+              >
                 Data de Nascimento
               </label>
 
               <input
+                id="data_nascimento"
                 type="date"
                 required
                 value={
@@ -350,13 +368,21 @@ export function NewPatientPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium"
+              >
                 E-mail <span className="text-red-500">*</span>
               </label>
 
               <input
+                id="email"
                 type="email"
                 required
+                aria-invalid={emailError ? true : undefined}
+                aria-describedby={
+                  emailError ? "email-error" : undefined
+                }
                 value={formData.email}
                 onChange={(e) => {
                   setFormData((prev) => ({
@@ -375,26 +401,36 @@ export function NewPatientPage() {
               />
 
               {emailError && (
-                <p className="text-sm text-red-600">
+                <p
+                  id="email-error"
+                  role="alert"
+                  className="text-sm text-red-600"
+                >
                   {emailError}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label
+                htmlFor="telefone"
+                className="text-sm font-medium"
+              >
                 Telefone
               </label>
 
               <input
-                type="text"
+                id="telefone"
+                type="tel"
+                inputMode="numeric"
                 maxLength={20}
                 value={formData.telefone}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    telefone:
-                      e.target.value,
+                    telefone: mascararTelefone(
+                      e.target.value
+                    ),
                   }))
                 }
                 className="w-full border rounded-md px-3 py-2"
@@ -404,11 +440,15 @@ export function NewPatientPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="status"
+              className="text-sm font-medium"
+            >
               Status
             </label>
 
             <select
+              id="status"
               value={formData.status}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -430,11 +470,15 @@ export function NewPatientPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="observacoes"
+              className="text-sm font-medium"
+            >
               Observações
             </label>
 
             <textarea
+              id="observacoes"
               rows={5}
               maxLength={500}
               value={formData.observacoes}

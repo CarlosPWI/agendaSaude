@@ -349,6 +349,46 @@ def test_criar_sem_email_do_paciente_nao_notifica(monkeypatch):
     assert notificacoes == []
 
 
+def test_criar_usa_email_do_agendamento_quando_informado(monkeypatch):
+    stub_repos(monkeypatch)
+
+    monkeypatch.setattr(
+        AgendamentoRepository,
+        "criar",
+        lambda p: {**p, "agendamento_id": AGENDAMENTO_ID},
+    )
+    monkeypatch.setattr(
+        PacienteRepository,
+        "buscar_por_id",
+        lambda v: {
+            "paciente_id": v,
+            "nome": "Maria",
+            "email": "cadastro@teste.com",
+        },
+    )
+
+    notificacoes = []
+
+    monkeypatch.setattr(
+        NotificacaoService,
+        "confirmar_agendamento",
+        lambda **kwargs: notificacoes.append(kwargs),
+    )
+
+    data = AgendamentoCreate(
+        usuario_id=UUID1,
+        paciente_id=1,
+        statusagendamento_id=1,
+        data_hora_inicio=hora_cheia(),
+        email="agendamento@teste.com",
+    )
+
+    AgendamentoService.criar(data, usuario_id=UUID1)
+
+    assert len(notificacoes) == 1
+    assert notificacoes[0]["paciente_email"] == "agendamento@teste.com"
+
+
 def test_falha_na_notificacao_nao_interrompe_criacao(monkeypatch):
     stub_repos(monkeypatch)
 

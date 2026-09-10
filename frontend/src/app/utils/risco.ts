@@ -36,7 +36,17 @@ export const NIVEL_RISCO: Record<NivelRisco["nivel"], NivelRisco> = {
 export interface ItemAgendamento {
   patientId: string;
   status: string; // 'agendado' | 'concluído' | 'cancelado'
+  statusNome?: string; // rótulo original (ex.: "Faltou", "Expirado")
 }
+
+// Status que representam falta (no-show) no rótulo original da API.
+const STATUS_FALTA = [
+  "faltou",
+  "expirado",
+  "no_show",
+  "não realizado",
+  "nao realizado",
+];
 
 // Pontua o risco de um agendamento considerando o histórico do paciente.
 export function calcularRisco(
@@ -50,13 +60,16 @@ export function calcularRisco(
   let pontos = 10;
 
   // Cada consulta cancelada soma 20; cada falta (não realizado) soma 30.
-  // O app normaliza status em: agendado | concluído | cancelado.
+  // O app normaliza status em: agendado | concluído | cancelado; por isso
+  // a falta é identificada pelo statusNome original.
   const cancelados = doMesmoPaciente.filter(
     (a) => a.status === "cancelado"
   ).length;
-  // Se existir status "não realizado"/falta, tratamos aqui:
+
   const faltas = doMesmoPaciente.filter((a) =>
-    ["não realizado", "nao realizado", "no_show"].includes(a.status)
+    STATUS_FALTA.includes(
+      (a.statusNome || "").toLowerCase()
+    )
   ).length;
 
   pontos += cancelados * 20 + faltas * 30;

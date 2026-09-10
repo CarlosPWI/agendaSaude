@@ -1,10 +1,13 @@
+import re
 from datetime import datetime, timedelta
 from uuid import UUID
 
 from pydantic import (
     BaseModel,
     ConfigDict,
+    EmailStr,
     Field,
+    field_validator,
     model_validator,
 )
 
@@ -58,7 +61,63 @@ class StatusAgendamentoResponse(BaseModel):
 # BASE
 # =========================
 
-class AgendamentoBase(BaseModel):
+class ContatoAgendamento(BaseModel):
+    """E-mail e WhatsApp de contato vinculados ao agendamento."""
+
+    email: EmailStr | None = Field(
+        default=None,
+        description="E-mail de contato para este agendamento"
+    )
+
+    whatsapp: str | None = Field(
+        default=None,
+        max_length=20,
+        description="WhatsApp no formato DDD (2) + 9 números"
+    )
+
+    model_config = ConfigDict(
+        str_strip_whitespace=True
+    )
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalizar_email(cls, value):
+        if isinstance(value, str) and value.strip() == "":
+            return None
+
+        return value
+
+    @field_validator("whatsapp")
+    @classmethod
+    def validar_whatsapp(cls, value: str | None):
+        if value is None:
+            return value
+
+        # Remove tudo que não for número
+        digitos = re.sub(r"\D", "", value)
+
+        if digitos == "":
+            return None
+
+        if len(digitos) != 11:
+            raise ValueError(
+                "WhatsApp deve ter DDD (2 dígitos) + 9 números (11 no total)"
+            )
+
+        ddd = int(digitos[:2])
+
+        if ddd < 11 or ddd > 99:
+            raise ValueError("DDD do WhatsApp inválido")
+
+        if digitos[2] != "9":
+            raise ValueError(
+                "O WhatsApp deve começar com 9 após o DDD"
+            )
+
+        return digitos
+
+
+class AgendamentoBase(ContatoAgendamento):
     usuario_id: UUID
 
     paciente_id: int = Field(
@@ -78,10 +137,6 @@ class AgendamentoBase(BaseModel):
     observacoes: str | None = Field(
         default=None,
         max_length=250
-    )
-
-    model_config = ConfigDict(
-        str_strip_whitespace=True
     )
 
 
@@ -106,7 +161,7 @@ class AgendamentoCreate(AgendamentoBase):
 # UPDATE
 # =========================
 
-class AgendamentoUpdate(BaseModel):
+class AgendamentoUpdate(ContatoAgendamento):
 
     usuario_id: UUID | None = None
 
@@ -148,6 +203,9 @@ class AgendamentoResponse(BaseSchema):
     data_hora_fim: datetime
 
     observacoes: str | None = None
+
+    email: EmailStr | None = None
+    whatsapp: str | None = None
 
     # relacionamentos
     usuarios: UsuarioResponse | None = None
